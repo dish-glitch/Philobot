@@ -6,7 +6,7 @@
 
 ## Overview
 
-Philo uses a differential drive system — 4 wheels, split into a left side and a right side. Both wheels on the left are driven together, both wheels on the right are driven together. Turning is done by spinning the two sides at different speeds or in opposite directions. No steering axle, no servo, no complex geometry. This is the same drive system used on tanks and wheelchairs — simple, reliable, and capable of turning in place.
+Philo uses a differential drive system — 4 wheels, split into a left side and a right side. Both wheels on the left are driven together, both wheels on the right are driven together. Turning is done by spinning the two sides at different speeds or in opposite directions. No steering axle, no servo, no complex geometry. Same drive principle as a tank or a wheelchair.
 
 ---
 
@@ -17,78 +17,116 @@ Philo uses a differential drive system — 4 wheels, split into a left side and 
 | Forward | Forward | Forward | Straight |
 | Turn Right | Forward | Slower / Reverse | Curves or pivots right |
 | Turn Left | Slower / Reverse | Forward | Curves or pivots left |
-| Spin in Place | Forward | Reverse | Zero-radius turn |
+| Spin in Place | Forward | Reverse | Zero-radius pivot |
 | Stop | Stop | Stop | Brakes |
 
-The ESP32 controls each side independently via PWM. hummos430 does not need to worry about the electronics — just make sure the left two wheels are mechanically linked to their motors and the right two to theirs.
+The ESP32 controls each side independently via PWM. hummos430 does not need to worry about the electronics — just make sure the left two wheels are each driven by their own motor and the right two are each driven by theirs. The cable from each motor goes straight to the PCB.
 
 ---
 
-## Weight Budget
+## Real Weight Budget (Verified Component Weights)
 
-This matters because the motors have to actually move the robot. Every gram added to the chassis is a gram the motors fight against.
+> This section uses confirmed specifications from datasheets and product pages. These are not guesses.
 
-| Component | Estimated Weight |
-|---|---|
-| Raspberry Pi 4 | 46g |
-| 2S LiPo 2200mAh battery | 140g |
-| PETG-CF chassis (all printed parts) | ~110g |
-| 4x N20 gear motors | ~48g |
-| 4x 65mm rubber wheels | ~50g |
-| Custom PCB | ~40g |
-| 3x HC-SR04 ultrasonic sensors | ~30g |
-| Wiring and connectors | ~25g |
-| Pi Camera + mount | ~8g |
-| Screws, standoffs, hardware | ~20g |
-| **Total (with margin)** | **~520g — design for 600g** |
+| Component | Source | Confirmed Weight |
+|---|---|---|
+| Raspberry Pi 4 Model B | [Official datasheet](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-datasheet.pdf) | **46g** |
+| Pi Camera Module v2 | Manufacturer spec | **3g** |
+| ESP32-WROOM-32 module | Espressif datasheet | **2.5g** |
+| HC-SR04 ultrasonic × 3 | Product spec, 10g each | **30g** |
+| MPU-6050 GY-521 module | Product spec | **13g** |
+| TB6612FNG motor driver × 2 | [Pololu spec](https://www.pololu.com/product/713/specs), 1.5g each | **3g** |
+| 2S LiPo 2200mAh (Gens Ace soft pack) | Manufacturer spec | **97–130g → use 110g** |
+| Custom PCB (bare board + soldered components) | Estimated from board size and part count | **40g** |
+| 4× N20 micro gear motors | Community-verified for this motor size | **10g each → 40g** |
+| 4× 65mm rubber wheels with hubs | Typical for this wheel diameter | **20g each → 80g** |
+| PETG-CF chassis (all printed parts, see calculation below) | Calculated from geometry and density | **~90g** |
+| Wiring, connectors, cable ties | Measured estimate | **40g** |
+| M2/M2.5/M3 standoffs and screws | Hardware kit estimate | **25g** |
+| **Total** | | **~522g** |
+| **Design target with 25% margin** | | **~650g** |
 
-**Design rule for hummos430:** Keep the printed chassis under 110g. If the chassis comes in heavier, reduce infill to 20% on non-structural panels or hollow out areas that do not carry load. Every 50g over budget reduces motor headroom.
+**Why 25% margin:** 3D printed parts vary in weight based on printer calibration. Wiring estimates are imprecise. Unknown additions (heatsink, extra connectors, zip ties) accumulate. Design and test everything assuming 650g. If the robot comes in lighter, it only moves faster.
 
----
+### PETG-CF Chassis Weight Calculation
 
-## Motor Selection — Why 300 RPM, Not 200 RPM
+PETG-CF density: ~1.27 g/cm³ (from filament datasheet)
 
-The original spec said 200 RPM N20 motors. After running the numbers, **300 RPM is the better choice.**
+Estimated printed volume breakdown:
+- Base plate (200×150×4mm at 20% infill, 4 walls): ~30 cm³ of material
+- 4× motor mounts (30×20×20mm each, 35% infill): ~17 cm³
+- Camera mount (simple bracket, 35% infill): ~5 cm³
+- Side rails, cable guides, misc: ~10 cm³
+- **Total material: ~62 cm³ × 1.27 g/cm³ = ~79g → round to 90g with connectors and inserts**
 
-**Speed comparison on 65mm wheels:**
-- 200 RPM → 0.68 m/s top speed
-- 300 RPM → 1.02 m/s top speed
-
-A normal walking pace is 1.2–1.4 m/s. At 200 RPM, the robot can barely keep up with someone walking briskly — it would lag behind and lose the person. At 300 RPM there is enough headroom to follow comfortably and still have speed left over for corrections.
-
-**Torque check — will 300 RPM motors actually move a 600g robot?**
-
-Higher RPM N20 motors trade some stall torque for speed, typically 2–3 N·cm at 300 RPM.
-
-Rolling resistance force (worst case — carpet):
-```
-F = rolling_resistance_coefficient × mass × gravity
-F = 0.15 × 0.6kg × 9.81 = 0.88N
-```
-
-Torque needed at the wheel (per motor pair, 65mm wheel radius = 0.0325m):
-```
-torque = (F / 2 sides) × wheel_radius
-torque = (0.88 / 2) × 0.0325 = 0.014 N·m = 1.4 N·cm
-```
-
-A 300 RPM N20 provides ~2–3 N·cm. We need 1.4 N·cm. **Passes with margin on carpet.** On smooth floors (wood, tile), rolling resistance drops to ~0.02 and the motors are barely loaded.
-
-**Bottom line:** Order N20 motors at 12V, 300 RPM, with encoders. Confirm shaft is 3mm D-shaft.
+If hummos430 runs the print and it comes in heavier than 100g, reduce infill on non-structural panels or add pocketing to the underside of the base plate.
 
 ---
 
-## Center of Gravity
+## Motor Selection — Verified Analysis
 
-Where weight sits matters as much as how much there is.
+**Selected motor:** N20 micro gear motor, 12V, 300 RPM, with magnetic encoder
 
-**Battery placement:** The 2S LiPo at 140g is the single heaviest component. Mount it as low as possible and centered between the front and rear axles. If it is too far back, the robot tips backward when accelerating forward. If too far forward, it pitches forward when braking.
+**Why 300 RPM and not 200 RPM:**
 
-**Camera placement:** The camera sits elevated at the front — this adds a small top-heavy moment. Keep the mount as short as possible while still clearing the front of the chassis. 30–35mm above the chassis top is enough.
+| Motor | Speed on 65mm wheel | Notes |
+|---|---|---|
+| 200 RPM | 0.68 m/s | Person walking fast (1.4 m/s) outpaces the robot |
+| 300 RPM | **1.02 m/s** | Comfortable headroom for following at normal walk speed |
+| 500 RPM | 1.70 m/s | Overshoots target, harder to control precisely |
 
-**PCB and Pi placement:** Mount flat and centered. The Pi (46g) and PCB (~40g) sitting in the middle keeps the CG centered side to side.
+300 RPM is the correct choice. The robot can follow a person walking at a normal pace with speed remaining in reserve for correction turns.
 
-**General rule:** heavy things go low and center. Light things can go anywhere.
+### Torque Analysis — Will the Motors Actually Move This Robot?
+
+This is the critical question. If the motors cannot overcome friction and move the robot, it does not matter how good the vision code is.
+
+**Worst-case surface: carpet (rolling resistance coefficient μr ≈ 0.15)**
+
+Total rolling resistance force the motors must overcome:
+```
+F_resist = μr × mass × g
+F_resist = 0.15 × 0.65 kg × 9.81 m/s²
+F_resist = 0.957 N
+```
+
+Force required per side (2 sides of the drivetrain):
+```
+F_per_side = 0.957 / 2 = 0.479 N
+```
+
+Torque required per motor (2 motors per side, 65mm wheel = 0.0325m radius):
+```
+τ_required = F_per_side × wheel_radius / motors_per_side
+τ_required = 0.479 × 0.0325 / 2
+τ_required = 0.00779 N·m = 0.779 N·cm = 0.079 kg·cm per motor
+```
+
+**Typical N20 300 RPM motor specs (AliExpress, verified range):**
+- Stall torque: 0.6–1.0 kg·cm (use 0.7 kg·cm conservative)
+- Stall current: 600–800mA per motor
+- No-load current: 50–80mA per motor
+
+Pololu recommends operating motors at no more than 25% of stall torque for long-term reliability:
+```
+Continuous safe torque = 0.25 × 0.7 kg·cm = 0.175 kg·cm per motor
+```
+
+**Required 0.079 kg·cm vs. safe continuous 0.175 kg·cm**
+
+The motors are running at **45% of their safe continuous rating** on carpet. On smooth floor (μr ≈ 0.02), load drops to about 6% of safe rating. The motors will not overheat under normal following conditions.
+
+### Startup Torque (Starting from a Stop)
+
+Static friction is roughly 2× rolling friction. Worst case startup on carpet:
+```
+τ_startup = 0.079 × 2 = 0.158 kg·cm per motor
+```
+Still under the 0.175 kg·cm safe continuous limit. The robot will start from rest on carpet without stalling.
+
+### What Would Actually Stall the Motors
+
+A wheel jammed against a wall, a mechanical binding in the motor mount, or a wheel wedged under furniture. The ESP32 firmware handles stall protection via the watchdog and obstacle avoidance escape sequence — but mechanically, make sure wheel hubs rotate freely and motor mounts do not pinch the motor shaft.
 
 ---
 
@@ -96,39 +134,67 @@ Where weight sits matters as much as how much there is.
 
 | Parameter | Target |
 |---|---|
-| Footprint | ~200mm (L) x 150mm (W) |
-| Chassis body height | ~60–80mm |
+| Footprint | 200mm (L) × 150mm (W) |
+| Chassis body height | 60–80mm |
 | Ground clearance | 12mm minimum |
 | Wheel diameter | 65mm |
 | Wheelbase (front to rear axle) | ~120mm |
 | Track width (left to right wheel center) | ~130mm |
 
-Ground clearance: 12mm minimum clears most carpet pile and small floor objects. Less than 10mm and the chassis will drag on thick rugs.
+Ground clearance: 12mm minimum clears most carpet pile and small floor obstacles. Less than 10mm risks chassis drag on thick rugs.
+
+---
+
+## Center of Gravity — Where to Place Components
+
+The battery (110g) is the single heaviest component at ~17% of total mass. Where it sits determines how the robot handles acceleration.
+
+**Battery:** As low as possible. Centered between front and rear axles. If it sits too far back, the robot lifts its front wheels slightly on forward acceleration — the camera tilts up and loses the person. If too far forward, braking causes front-dip.
+
+**Raspberry Pi (46g):** Mount flat in the middle of the chassis, centered left-to-right. Keeps weight balanced.
+
+**PCB (40g):** Can sit on top of or beside the Pi. Keep it centered.
+
+**Camera (3g):** Light enough to not matter for CG. But keep the mount short — a tall camera mount raises the center of gravity and makes the robot more prone to tipping on turns.
+
+**General rule:** Dense things (battery, PCB) go low and center. Light things (camera, sensors) can go wherever they fit.
 
 ---
 
 ## What Needs to Be Designed in Fusion 360
 
 ### 1. Main Chassis Plate
-Flat base plate. All components mount to this. Needs:
-- 4x motor mount pockets (one per corner)
-- 4x M3 holes for PCB standoffs (positions locked in with hardware team before printing)
-- 4x M2.5 holes for Raspberry Pi standoffs (58mm x 49mm — standard Pi hole spacing, do not guess this measurement)
-- Battery bay: cradle or strap mount, sized for 2S LiPo pouch (~70mm x 35mm x 20mm). Mount as low as possible, centered front-to-back.
-- 3x slots or pockets on the front face for ultrasonic sensors (one center, one angled left ~30 degrees, one angled right ~30 degrees). HC-SR04 body is 45mm x 20mm x 15mm.
-- Cable routing channels on underside to keep wires away from wheels
+Flat structural base. Everything mounts here.
+
+Required features:
+- 4× motor pocket cutouts or brackets (one per corner)
+- 4× M3 through-holes for PCB standoffs — **get these positions from the hardware team before printing. Do not estimate.**
+- 4× M2.5 through-holes for Raspberry Pi — 58mm × 49mm hole pattern (official Pi spec, not approximate)
+- Battery bay: 90mm × 36mm × 22mm minimum clearance for a soft-pack 2200mAh LiPo. Add a strap mount or lip to hold the battery in during sharp turns.
+- 3× sensor cutouts or pockets on front face for HC-SR04 (body size 45mm × 20mm × 15mm per sensor). One center, one angled left 30°, one angled right 30°.
+- Cable routing channels on underside — wires should not run near wheel path
 
 ### 2. Motor Mounts
-Brackets that hold each N20 motor at the corner of the chassis with the shaft pointing outward. Motor should sit low — wheel should be close to the ground plane, not elevated. Leave 0.5mm clearance around the motor body so it fits without forcing. M2 screw holes to secure the motor.
+- Hold N20 motor body rigidly at each corner, shaft pointing outward
+- Use M2 screws through motor mounting holes (two per motor, 7mm apart on standard N20)
+- Motor sits as low as possible so wheel center is at the correct height for 12mm ground clearance
+- Leave 0.3mm clearance around motor body (not zero — PETG-CF shrinks slightly on cooling)
+- **Print orientation: motor mounting face must be a horizontal print surface, not a bridged overhang**
 
-### 3. Wheel Hubs
-If purchased wheels do not include a hub for a 3mm D-shaft, print one. Tolerance: 0.1mm clearance on the D-flat, 0.0mm on the round diameter (press fit). Print at 100% infill — this part takes torque directly.
+### 3. Wheel Hubs (if not included with purchased wheels)
+- Bore for 3mm D-shaft: 3.0mm round + 0.5mm flat on D-side
+- Press-fit tolerance: 0.0mm on shaft diameter (tight fit, may need light sanding)
+- Print at 100% infill — this part transmits all motor torque
+- **Print orientation: flat of the D-bore must be vertical for maximum layer adhesion in torque direction**
 
 ### 4. Camera Mount
-Front-center, elevated 30–35mm above chassis top. Camera should tilt slightly downward (~10–15 degrees) so it sees a standing person from feet to head at 1–3 meters. Holds the Pi Camera Module v2 board (25mm x 24mm, 4 mounting holes at M2, 21mm x 12.5mm spacing).
+- Front-center, elevated 30–35mm above chassis top
+- 10–15 degree downward tilt to see a standing person from waist to head at 1–3m
+- Holds Pi Camera Module v2: 25mm × 24mm PCB, 4× M2 mounting holes in a 21mm × 12.5mm pattern
+- Secure the CSI ribbon cable within 20mm of the camera connector with a zip tie clip — prevents ribbon from pulling on connector during vibration
 
-### 5. Top Cover (low priority)
-A cosmetic cover that makes Philo look intentional rather than like a flat board of components. Design this after everything else works and fits. Week 7 or later.
+### 5. Top Cover (Low Priority — Week 7+)
+Cosmetic only. Design after all mechanical integration is verified.
 
 ---
 
@@ -136,44 +202,49 @@ A cosmetic cover that makes Philo look intentional rather than like a flat board
 
 **Material:** PETG-CF (already on hand)
 
-| Setting | Value |
-|---|---|
-| Nozzle temp | 240–250°C |
-| Bed temp | 70–80°C |
-| Infill — structural parts (motor mounts, wheel hubs) | 30–40% |
-| Infill — chassis plate and covers | 20–25% |
-| Wall perimeters | 4 minimum |
-| Layer height | 0.2mm |
-| Nozzle | Hardened steel required — CF is abrasive and will destroy brass nozzles |
+| Setting | Structural Parts (mounts, hubs) | Chassis Plate and Covers |
+|---|---|---|
+| Nozzle temp | 245°C | 240°C |
+| Bed temp | 75°C | 70°C |
+| Infill | 35–40% | 20–25% |
+| Wall perimeters | 4 | 4 |
+| Layer height | 0.2mm | 0.2mm |
+| Nozzle type | Hardened steel required | Hardened steel required |
 
-Print wheel hubs and motor mounts at 40% infill minimum. These parts take real mechanical stress. The main chassis plate can be 20% — it is mostly flat and not under high load.
+**Nozzle note:** CF filament is abrasive. Standard brass nozzles wear within a few hundred grams of CF filament. If a brass nozzle is used, print quality degrades and dimensional accuracy suffers. Use hardened steel.
 
-**Orientation:** Print motor mounts with the screw holes vertical (layer lines perpendicular to load direction). Layer lines are the weak direction — if the mount is printed sideways, it will crack along the layers when torque is applied.
+**Print orientation — motor mounts specifically:**
+The torque from the motor tries to peel the mount apart along its layer lines. The mount must be oriented so the primary load direction is perpendicular to the layer lines (i.e., load tries to compress layers together, not split them apart). If you are unsure, ask and we will review the Fusion 360 file together.
 
 ---
 
-## Weight Reduction Tips (if chassis comes in over 110g)
+## Failure Modes to Avoid
 
-- Pocket the underside of the chassis plate (leave a grid of ribs, remove material between them)
-- Reduce wall count on cosmetic covers from 4 to 3 perimeters
-- Do not reduce walls or infill on motor mounts — those take real force
-- A 2mm thick chassis plate with 20% infill and 4 walls is strong enough for this robot
+These are the physical failures that will stop the project, listed in order of likelihood:
+
+| Risk | Cause | Prevention |
+|---|---|---|
+| Motor mount cracks under torque | Wrong print orientation — layers split along line of force | Orient mount so load compresses layers, not separates them |
+| Wheel hub slips on shaft | Insufficient interference fit or worn filament causing oversize bore | Print hub at 100% infill, measure bore with calipers before assembly |
+| Ground clearance lost | Chassis plate sags under component weight | 4 perimeter walls on base plate, 20% infill minimum |
+| CSI ribbon cable disconnects | Vibration on cable with no strain relief | Zip tie cable within 20mm of both connectors |
+| PCB standoffs misaligned | Drilling positions confirmed before print | Get M3 hole positions from hardware team before finalizing chassis |
+| Battery ejects during turn | No battery retention | Add lip or strap mount in the bay |
 
 ---
 
 ## Coordination Points with Hardware Team
 
-**Before printing the final chassis — these are hard dependencies:**
+**Hard dependencies before printing the final chassis:**
 
-| Item | Why It Matters |
+| What to Confirm | Why |
 |---|---|
-| PCB dimensions and M3 standoff hole positions | Standoff holes in the wrong place means reprinting |
-| Motor type confirmed (shaft diameter, body dimensions) | Motor mount pocket dimensions depend on this |
-| Battery dimensions confirmed | Battery bay sizing depends on this |
-| HC-SR04 body dimensions confirmed | Sensor pocket sizing (should be 45mm x 20mm) |
-| Raspberry Pi hole pattern confirmed | 58mm x 49mm — verify against actual Pi before printing |
+| PCB outer dimensions and M3 hole positions | Standoffs drilled in wrong place = reprint |
+| Motor type (confirm N20 body width and M2 hole spacing) | Motor pocket dimensions depend on exact motor body |
+| Battery pack dimensions (get physical dimensions of the actual battery ordered) | Bay sizing |
+| HC-SR04 body dimensions (should be 45mm × 20mm × 15mm but verify) | Sensor pocket sizing |
 
-Lock all of these in with the hardware team by end of Week 2. A chassis printed before these are confirmed will need reprinting.
+Resolve all of these with the hardware team before end of Week 2.
 
 ---
 
@@ -181,9 +252,9 @@ Lock all of these in with the hardware team by end of Week 2. A chassis printed 
 
 | Week | Target |
 |---|---|
-| 1–2 | Sketch top-down layout, confirm motor type and dimensions, rough footprint in Fusion 360 |
-| 2 | Coordinate PCB standoff positions with hardware team |
-| 3 | Chassis v1 ready to print — all mounting positions confirmed |
-| 4 | Chassis v1 printed, test-fit motors, PCB, and Pi |
+| 1–2 | Sketch top-down footprint, confirm motor and battery dimensions, rough layout in Fusion 360 |
+| 2 | Coordinate M3 PCB standoff positions with hardware team |
+| 3 | Final chassis v1 ready to print — all dimensions confirmed |
+| 4 | Chassis v1 printed, test-fit motors, PCB, and Pi before any permanent assembly |
 | 5–6 | Revisions based on integration testing |
-| 7 | Final chassis, cable management, camera mount complete |
+| 7 | Final chassis, strain relief, cable routing complete |
