@@ -214,6 +214,67 @@ void i2c_bus_recovery() {
 
 ---
 
+## Companion Display — OLED Eyes
+
+Philo is a companion robot, so it has a face: two SSD1306 OLED displays (128x64, I2C) acting as animated eyes. The ESP32 drives them because it is already the I2C master and it knows the robot's real-time state (moving, stopped, obstacle, tilt, low battery).
+
+**Hardware:** Two OLEDs on the existing I2C bus, at addresses 0x3C and 0x3D (set by the address-select jumper/resistor on each module). The MPU-6050 is already on this bus at 0x68, so the bus now carries three devices. The existing 4.7k pull-ups are adequate for three devices on a short bus.
+
+### CRITICAL: Run the display on core 1, not in the control loop
+
+A full 128x64 OLED refresh over I2C at 400kHz takes ~23ms. Two displays is ~46ms. If you render eyes inside the main control loop, you destroy PID timing and the robot drives badly.
+
+The ESP32 is dual-core. Pin the display rendering to **core 1** as a separate FreeRTOS task. The control loop (motors, PID, sensors, UART, watchdog) stays on **core 0** where it runs uninterrupted.
+
+```cpp
+// Shared state — written by core 0, read by core 1
+volatile RobotMood current_mood = MOOD_NEUTRAL;
+
+void display_task(void *param) {
+    init_oled(0x3C);  // left eye
+    init_oled(0x3D);  // right eye
+    for (;;) {
+        render_eyes(current_mood);   // draw both eyes for current mood
+        vTaskDelay(pdMS_TO_TICKS(100));  // ~10 FPS, plenty for eye animation
+    }
+}
+
+void setup() {
+    // ... control setup on core 0 ...
+    xTaskCreatePinnedToCore(display_task, "eyes", 4096, NULL, 1, NULL, 1);  // core 1
+}
+```
+
+Eye rendering reads `current_mood` but never writes shared control state. Core 0 sets the mood flag; core 1 just draws. No mutex needed for a single volatile enum.
+
+### Mood states
+
+The ESP32 derives most expressions from its own state. The Pi sends optional hints for vision-driven moods over UART.
+
+| Mood | Trigger (who sets it) | Eye expression |
+|---|---|---|
+| NEUTRAL | Following normally (core 0) | Open, looking forward |
+| HAPPY | Pi sends `MOOD:FOUND` when target acquired | Curved/smiling eyes |
+| SEARCHING | Pi sends `MOOD:LOST` when no person detected | Eyes glance side to side |
+| WAITING | Pi sends `MOOD:WAIT` on raised-hand gesture | Half-closed, calm |
+| ALERT | Obstacle detected by ultrasonic (core 0) | Wide eyes |
+| DIZZY | IMU tilt > 30 degrees (core 0) | Spiral / X eyes |
+| SLEEPY | Low battery < 6.4V (core 0) | Drooping eyes |
+
+### MOOD protocol extension
+
+The Pi can send mood hints over the existing UART link using a second command prefix, parsed alongside CMD:
+
+```
+MOOD:FOUND\n     -> set current_mood = HAPPY
+MOOD:LOST\n      -> set current_mood = SEARCHING
+MOOD:WAIT\n      -> set current_mood = WAITING
+```
+
+`MOOD:` packets only set the display flag — they never move motors. State set by core 0 (ALERT, DIZZY, SLEEPY) takes priority over Pi mood hints, because safety-relevant state should always show on the face.
+
+---
+
 ## Firmware Structure (PlatformIO)
 
 ```
@@ -224,7 +285,8 @@ firmware/esp32/
 |   +-- motor.cpp / .h      # PWM, PID, encoder ISR
 |   +-- ultrasonic.cpp / .h # HC-SR04 sequential polling and priority logic
 |   +-- imu.cpp / .h        # MPU-6050 I2C read, tilt check
-|   +-- serial_cmd.cpp / .h # UART parse, watchdog timer
+|   +-- serial_cmd.cpp / .h # UART parse (CMD: and MOOD:), watchdog timer
+|   +-- display.cpp / .h    # OLED eyes, core-1 FreeRTOS task, mood rendering
 +-- test/                   # unit tests if needed
 ```
 
