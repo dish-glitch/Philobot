@@ -74,6 +74,23 @@ Tune Kp first (increase until robot responds without oscillating), then Ki (remo
 
 Each side has its own PID instance. This is what keeps the robot driving straight instead of drifting — if one motor is slightly faster than the other, the PID corrects it automatically.
 
+**Soft-start — required to protect TB6612FNG:**
+
+On every new movement command (transitioning from stop to motion), ramp PWM from 0 to the target duty cycle over 200ms. Do not jump immediately to full duty cycle.
+
+```cpp
+void soft_start(uint8_t target_pwm, uint8_t motor_side) {
+    uint8_t current = 0;
+    while (current < target_pwm) {
+        current = min(current + 5, target_pwm);
+        set_motor_pwm(motor_side, current);
+        delay(10);  // 200ms total for 0->255 ramp, shorter for lower targets
+    }
+}
+```
+
+Why: JGA25-370 motors starting from rest on carpet are near stall for 100-400ms. Without soft-start, TB6612FNG sees repeated stall-current bursts on every start. With soft-start, the current rises gradually as the motor accelerates, never hitting peak stall.
+
 ---
 
 ## Ultrasonic Sensor Logic
@@ -104,6 +121,34 @@ Timing:
 4. Measure how long echo pin stays HIGH
 5. distance_cm = echo_duration_us / 58.0
 ```
+
+**Sensor invalid reading handling:**
+
+HC-SR04 can return no echo (object too close, noise, wiring fault). Do not interpret timeout as 0cm (triggers escape loop) or as max range (treats blocked path as clear). Instead:
+
+```cpp
+#define SENSOR_MIN_CM 2
+#define SENSOR_MAX_CM 400
+#define SENSOR_INVALID_HOLDOFF_CYCLES 3
+
+uint16_t last_valid[3] = {400, 400, 400};  // default to far/clear
+uint8_t  invalid_count[3] = {0, 0, 0};
+
+void update_sensor(int idx, uint16_t raw_cm) {
+    if (raw_cm < SENSOR_MIN_CM || raw_cm > SENSOR_MAX_CM) {
+        invalid_count[idx]++;
+        if (invalid_count[idx] >= SENSOR_INVALID_HOLDOFF_CYCLES) {
+            last_valid[idx] = 20;  // treat as obstacle after 3 bad readings
+        }
+        // else: hold last known valid reading
+    } else {
+        last_valid[idx] = raw_cm;
+        invalid_count[idx] = 0;
+    }
+}
+```
+
+Use `last_valid[idx]` in the priority logic below, never raw readings.
 
 **Priority override (runs before applying Pi command):**
 ```
@@ -136,6 +181,22 @@ The ESP32 just follows orders. The watchdog timer is important here — if the P
 MPU-6050 over I2C. Read pitch angle every 100ms. If pitch exceeds +/-30 degrees (robot tipping forward or backward), cut all motor power immediately and hold until pitch returns to safe range.
 
 This protects the PCB and camera if the robot drives off a ledge or tips on a ramp.
+
+**UART buffer flush on boot:**
+
+When ESP32 resets (power cycle or watchdog), the Pi's serial write buffer may contain queued commands from before the reset. On boot, flush the UART receive buffer before entering the main loop — discard everything in the buffer accumulated while ESP32 was offline:
+
+```cpp
+void setup() {
+    Serial2.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
+    delay(300);  // wait for Pi to potentially send stale data
+    while (Serial2.available()) Serial2.read();  // flush
+    i2c_bus_recovery();
+    // ... rest of setup
+}
+```
+
+Without this, the robot may execute stale commands (e.g., CMD:F,255 from before the crash) immediately on recovery.
 
 **I2C bus recovery:** Run a 9-clock SCL recovery routine at firmware init before starting the main loop. This clears any stuck-SDA-low condition left over from a hard reset or Pi reboot mid-transaction:
 
