@@ -37,7 +37,7 @@ So the honest situation: **with these motors, 2S is correct and 0.52 m/s is your
 
 ### A4 — ESP32 GPIO pin assignments
 **Why frozen:** Once the PCB is routed, the pins are physically wired. The firmware adapts to the board, not the other way around. We already resolved the GPIO 21/22 double-assignment conflict (I2C vs ultrasonic). That fix is locked.
-**Locked map:** Motor PWM/dir on 25/26/27 and 32/33/14, encoders on 34/35, ultrasonic triggers on 5/13/19, echoes on 4/18/23, I2C on 21/22, UART on 16/17, battery ADC on 36, status LED on 2. Verify against the KiCad schematic before routing.
+**Locked map:** Motor PWM/dir on 25/26/27 and 32/33/14, encoders on 34/35, ultrasonic triggers on 5/13/19, echoes on 4/18/23, I2C on 21/22 (now carries MPU-6050 + 2 OLED eyes — no new pins), UART on 16/17, battery ADC on 36, status LED on 2. Verify against the KiCad schematic before routing. Note: the ESP32 is essentially full — the only remaining free pins (0, 12, 15) are boot-strapping pins, which is why audio lives on the Pi, not here.
 
 ### A5 — Power architecture
 **Why frozen:** This is the part that took the most review to get right. Locked:
@@ -61,6 +61,13 @@ So the honest situation: **with these motors, 2S is correct and 0.52 m/s is your
 
 ### A9 — HC-SR04 echo voltage dividers (1k/2k) and the level-shift requirement
 **Why frozen:** These protect the ESP32 GPIO from 5V echo signals. 6 resistors on the schematic. Not optional, not changeable post-fab.
+
+### A10 — Companion eyes + audio architecture (added at design freeze)
+**Why frozen:** Decided before the board and chassis are locked, so the I2C bus and chassis cutouts can be designed in now rather than retrofitted.
+- **Eyes:** 2x SSD1306/SH1106 OLED (128x64, I2C) at addresses 0x3C and 0x3D, on the *existing* I2C bus alongside the MPU-6050 (0x68). Three I2C devices total. No new ESP32 GPIO pins. Driven by the ESP32 on **core 1** (a full refresh is ~23ms and must not run in the control loop on core 0).
+- **Audio:** driven by the **Raspberry Pi**, not the ESP32 (the ESP32 has no safe free pins left — only boot-strapping pins remain). Pre-recorded WAV clips via aplay, triggered on state transitions. The custom PCB carries audio only as a 5V power allowance if the speaker taps the 5V rail.
+- **Chassis impact (hummos430):** two OLED-sized cutouts in the front of the mast head (active area ~22x11mm, module ~27x27mm) and a speaker grille. These must be in the chassis design before printing.
+- **Live ChatGPT voice = explicitly V2.** Not in this build (see D7).
 
 ---
 
@@ -127,6 +134,12 @@ The ±15–30° side gap is acceptable for a living-room demo where obstacles ar
 ### D6 — ❌ SLAM / mapping
 Already rejected earlier in the project. Reactive obstacle avoidance is the right scope. Don't reintroduce it.
 
+### D7 — ❌ Live ChatGPT voice conversation (for V1)
+A real voice pipeline (mic → speech-to-text → LLM API → text-to-speech → speaker) is a second project. It competes with YOLOv8 for the Pi's already-maxed CPU, adds a microphone hardware chain, and makes the demo depend on a live internet connection and external API uptime. The companion feel is delivered by eyes + pre-recorded clips (A10) at near-zero risk. Live conversation is a post-demo V2 goal. To keep the door open cheaply: leave one Pi USB port free for a future mic. Build nothing else for it now.
+
+### D8 — ❌ 4S battery / drivetrain redesign (for V1)
+A 4S pack (16.8V full charge) exceeds the TB6612FNG absolute max (15V) and would destroy the 6V JGA25-370 motors. Using it requires 12V motors + a higher-voltage driver (or a motor-rail buck) + a larger chassis — a 1–2 week redesign of frozen items. Decided against for V1; a ~$15 2S 2200mAh pack keeps the proven design intact. The 4S is a V2 option if a bigger/faster build is pursued later.
+
 ---
 
 ## SECTION E — Freeze Sign-Off Checklist
@@ -136,12 +149,14 @@ Before the board is ordered (target: Week 3), confirm every item:
 - [ ] Motors ordered and physically measured (A1) — caliper-verified body, shaft, hole spacing
 - [ ] Speed decision made and accepted (A2) — 0.52 m/s with JGA25-370, OR motor swapped before freeze
 - [ ] PCB outline and standoff holes agreed in writing between hardware and hummos430 (A3)
-- [ ] ESP32 pin map verified against KiCad schematic, no conflicts (A4)
+- [ ] ESP32 pin map verified against KiCad schematic, no conflicts (A4) — OLED eyes use existing I2C, no new pins
 - [ ] Power architecture matches A5 exactly (AMS1117 from 5V, 7A fuse, thermal pads)
 - [ ] Ground plane + star ground in the layout (A6)
-- [ ] Actual battery measured, bay sized to it (A7)
+- [ ] Actual battery measured, bay sized to it (A7) — 2S 2200mAh confirmed, NOT the 4S
 - [ ] Camera mast geometry locked at 380mm / 20–25° (A8)
 - [ ] HC-SR04 dividers on all 3 echo lines (A9)
+- [ ] OLED eyes at 0x3C/0x3D on I2C bus; mast-head eye cutouts in chassis design (A10)
+- [ ] Speaker grille in chassis design; speaker powered from Pi USB or 5V rail with budget noted (A10)
 - [ ] Test points added (C1)
 - [ ] 10µF ceramic at XT30 (C2)
 - [ ] Pi heatsink in the build (C3)
