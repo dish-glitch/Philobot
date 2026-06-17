@@ -11,7 +11,7 @@ Legend — **Form:** IC = bare chip soldered to board; Module = pre-made breakou
 | Ref | Part | Value / Spec | Form | Package | Qty | Notes |
 |---|---|---|---|---|---|---|
 | U1 | ESP32-WROOM-32 | 240MHz, 4MB flash | Module | Castellated SMD | 1 | Use Espressif KiCad footprint |
-| U2 | MP1584EN | 5.0V out, 3A buck | Module (recommended) | Pin/castellated module | 1 | Module includes inductor, diode, FB resistors. Set output to 5.0V with onboard trimpot BEFORE soldering down. If using bare IC instead, add L/D/R_fb per datasheet. |
+| U2 | Pololu D24V50F5 | 5.0V fixed out, 5A buck | Module | Pololu regulator module | 1 | 5V fixed output — no trimpot to set. VIN←VBAT, VOUT→+5V, GND. EN floats (enabled by default). Chosen over the 3A MP1584EN for headroom on the Pi rail (Pi 2.5-3A + AMS cascade). |
 | U3 | AMS1117-3.3 | 3.3V LDO, 800mA | IC | SOT-223 | 1 | **Input from 5V rail (U2 out), NOT VBAT** — thermal lock decision |
 | U4 | TB6612FNG | Dual H-bridge | IC | SSOP-24 (exposed pad) | 1 | Channel A = left-front motor, Channel B = right-front motor |
 | U5 | TB6612FNG | Dual H-bridge | IC | SSOP-24 (exposed pad) | 1 | Channel A = left-rear motor, Channel B = right-rear motor |
@@ -61,7 +61,7 @@ Legend — **Form:** IC = bare chip soldered to board; Module = pre-made breakou
 | R13 | 3.3kΩ | 0603 | 1 | Battery sense divider — GND side |
 | R14, R15 | 10kΩ | 0603 | 2 | STBY pull-ups (or tie STBY directly to 3V3 — see schematic) |
 
-> If U2 is the bare MP1584EN IC instead of a module, add: L (e.g., 10µH 3A), D (Schottky, e.g., SS34), and feedback resistors R_fb1=100k / R_fb2≈19.1k for 5.0V (Vout = 0.8×(1+R_fb1/R_fb2)). **The module is recommended for a first board** to avoid switching-regulator layout pitfalls.
+> The D24V50F5 is a complete regulator module (inductor, control, compensation all on-board) — you place it like a daughtercard and wire 4 pins. This is the right choice for a first board: no switching-regulator layout to get wrong. Budget alternative: an XL4016-based 5A module set to 5.0V (cheaper, larger, must set output before soldering). Do not drop back to a 3A part — the Pi rail needs the headroom.
 
 ---
 
@@ -96,7 +96,7 @@ Legend — **Form:** IC = bare chip soldered to board; Module = pre-made breakou
 | Rail | Source | Feeds |
 |---|---|---|
 | VBAT (6.4–8.4V) | J1 → F1 → Q1 | TB6612FNG VM (motors), MP1584EN input, battery-sense divider |
-| 5V | MP1584EN (U2) | Raspberry Pi, AMS1117 input, HC-SR04 VCC, (optional speaker) |
+| 5V | D24V50F5 (U2, 5A) | Raspberry Pi, AMS1117 input, HC-SR04 VCC, (optional speaker) |
 | 3.3V | AMS1117 (U3) | ESP32, MPU-6050, TB6612FNG VCC/STBY, OLED eyes, I2C pull-ups, LED |
 
 **Key locked decisions reflected here:** AMS1117 fed from 5V (not VBAT); 7A polyfuse; one H-bridge channel per motor; OLED eyes on existing I2C; audio off-board on the Pi.
