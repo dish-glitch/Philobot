@@ -41,7 +41,7 @@ So the honest situation: **with these motors, 2S is correct and 0.52 m/s is your
 
 ### A5 — Power architecture
 **Why frozen:** This is the part that took the most review to get right. Locked:
-- 5V rail: MP1584EN buck (3A), 1000µF + 100nF output caps, thermal pad to copper pour
+- 5V rail: Pololu D24V50F5 buck (5V/5A, fixed output), 1000µF + 100nF output caps. Upgraded from the 3A MP1584EN for headroom on the Pi rail (Pi 2.5-3A + AMS cascade + possible USB speaker)
 - 3.3V rail: AMS1117-3.3 fed **from the 5V rail, not VBAT** (thermal fix — 62°C vs 135°C junction)
 - 7A-rated polyfuse on VBAT input (not 5A — avoids pre-trip voltage sag)
 - Reverse-polarity P-MOSFET on VBAT
@@ -120,7 +120,7 @@ Equally important as knowing what to add: knowing what to refuse. Each of these 
 Suggested in review. **Do not do this.** An inductor in series with the motor current path fights the current change during reversal and generates a voltage spike that can exceed what the TB6612FNG flyback diodes and bulk caps handle. It makes the transient problem *worse*, not better. The 470µF bulk caps are the correct solution.
 
 ### D2 — ❌ "Power domain separation" beyond what exists
-Review flagged this as a missing upgrade. It isn't missing — we already have it. MP1584EN is the dedicated logic buck, motors run directly from VBAT through the TB6612FNG, bulk caps isolate the transient domains. The separation being asked for is already in the design.
+Review flagged this as a missing upgrade. It isn't missing — we already have it. The D24V50F5 is the dedicated logic buck, motors run directly from VBAT through the TB6612FNG, bulk caps isolate the transient domains. The separation being asked for is already in the design.
 
 ### D3 — ❌ Coral USB / Hailo / Jetson for faster inference
 The ~200ms latency ("laggy dog" feel) is real but is an accepted characteristic, not a defect. Adding an AI accelerator is a major scope, cost, and integration change for a demo that works fine at current speed. V2 territory.
