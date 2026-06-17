@@ -34,13 +34,18 @@ Use these named nets everywhere instead of long wires:
 
 ### Input protection chain
 ```
-J1.+ (XT30)  →  F1 (7A polyfuse)  →  Q1 source (P-FET reverse protection)  →  VBAT
+J1.+ (XT30)  →  F1 (7A polyfuse)  →  Q1 DRAIN (P-FET reverse protection) ;  Q1 SOURCE  →  VBAT
 J1.-         →  GND
-Q1 gate      →  GND through R (10k); Q1 drain → VBAT net
+Q1 gate      →  GND through R (10k)
 C9  (10µF ceramic)  : VBAT → GND   (at J1, fast transient)
 C10 (100µF elec)    : VBAT → GND   (bulk)
 ```
-Reverse-polarity P-FET orientation: source to incoming +, drain to VBAT net, gate to GND via 10k. Correct polarity turns it on; reversed polarity keeps it off. Verify orientation against the AOD4185 (or chosen P-FET) datasheet — this is a common place to get the pinout backwards.
+**Reverse-polarity P-FET orientation (get this right — it is the #1 place this circuit is wired wrong):**
+- **Drain → battery side** (incoming +, after the fuse)
+- **Source → load side** (VBAT net)
+- **Gate → GND via 10k**
+
+Why: a P-FET body diode conducts drain→source. For protection it must conduct battery→load (so the board powers up) and block on reversal. That requires drain=battery, source=load. If you swap them, the board works normally but the body diode dumps reversed voltage into the Pi/ESP32 when the battery is plugged in backwards — i.e., it fails exactly when you need it. In normal operation source sits at ~VBAT, gate at 0V, so Vgs ≈ -7.4V (fully on); at 8.4V full charge Vgs ≈ -8.4V, within the AOD4185 ±20V gate rating (no Zener clamp needed at 2S). Verify the G/D/S pin order against the actual P-FET datasheet before placing the footprint.
 
 ### 5V rail — MP1584EN (U2, module)
 ```
