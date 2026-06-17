@@ -1,2 +1,3 @@
 # Philobot
-A robot companion that follows you!
+Meet Philo 
+A robot that follows you.
