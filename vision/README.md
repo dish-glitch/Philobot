@@ -300,6 +300,53 @@ Send one command per inference loop iteration. Do not flood the serial port — 
 
 ---
 
+## Companion Audio (Pi-side) and Eye Mood Hints
+
+Philo is a companion robot. The Pi drives two things beyond following:
+
+1. **Sound clips** — short WAV files for personality (the speaker is on the Pi, not the ESP32; see hardware README for why)
+2. **Eye mood hints** — the OLED eyes are driven by the ESP32, but the Pi tells it which mood to show for vision-driven states (found you / lost you / waiting)
+
+### Sound clips
+
+Pre-recorded WAV files played on state changes. NOT live text-to-speech, NOT a ChatGPT voice pipeline — those are V2 (they would compete with YOLO for CPU and add internet dependency).
+
+```python
+import subprocess
+
+def play_clip(name):
+    # non-blocking — don't stall the inference loop waiting for audio
+    subprocess.Popen(["aplay", f"/home/pi/philo/sounds/{name}.wav"],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+# Trigger on state TRANSITIONS only, not every frame:
+#   target acquired after being lost -> play_clip("found")
+#   person lost                      -> play_clip("searching")
+#   raised-hand gesture detected     -> play_clip("waiting")
+```
+
+Only play a clip when the state actually changes. Playing a clip every frame produces a stutter of overlapping sounds. Gate on transition.
+
+### Eye mood hints over UART
+
+When the vision state changes, send a `MOOD:` packet to the ESP32 so the eyes match. This rides the existing serial link alongside `CMD:` packets (see firmware README for the ESP32 side).
+
+```python
+def send_mood(mood):       # mood in {"FOUND", "LOST", "WAIT"}
+    ser.write((f"MOOD:{mood}\n").encode('utf-8'))
+
+# On transition into following with a target:
+send_mood("FOUND")
+# On losing the person:
+send_mood("LOST")
+# On raised-hand gesture (WAITING state):
+send_mood("WAIT")
+```
+
+`MOOD:` packets do not affect motion — the ESP32 only uses them to pick an eye expression. Safety states (obstacle, tilt, low battery) are set by the ESP32 itself and override Pi mood hints.
+
+---
+
 ## File Structure
 
 ```
@@ -307,7 +354,9 @@ vision/rpi/
 +-- requirements.txt         # ultralytics, opencv-python, pyserial, picamera2
 +-- follow.py                # main script -- camera, inference, serial output
 +-- gesture.py               # hand raise detection, state machine
++-- audio.py                 # sound clip playback (aplay), mood hint sender
 +-- utils.py                 # offset calculation, distance mapping, serial helpers
++-- sounds/                  # found.wav, searching.wav, waiting.wav, etc.
 ```
 
 ---
