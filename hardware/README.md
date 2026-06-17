@@ -26,7 +26,7 @@ Every part below has been cross-referenced against its datasheet or product page
 | MPU-6050 (GY-521 module) | 3-axis accel +/-16g, 3-axis gyro +/-2000 deg/s, I2C, 3.3-5V, 21x15mm | [InvenSense datasheet](https://product.tdk.com/en/search/sensor/mortion-inertial/imu/info?part_no=MPU-6050) | 13g |
 | HC-SR04 x3 | 5V, <15mA, 2-400cm range, 40kHz, 45x20x15mm | [Sparkfun datasheet](https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf) | 10g each |
 | AMS1117-3.3 LDO | 3.3V out, 800mA max, SOT-223 package | AMS datasheet | <1g |
-| MP1584EN Buck Converter | 4.5-28V in, adjustable out, 3A continuous, 1.5MHz switching, SOP-8 | MPS datasheet | <1g |
+| Pololu D24V50F5 Buck (5V/5A) | 4.5-38V in, 5.0V fixed out, 5A continuous, regulated module | [Pololu D24V50F5](https://www.pololu.com/product/2851) | ~5g |
 | JGA25-370 x4 | 6V, 200 RPM, 1.8-2.2 kg*cm stall torque, 4mm D-shaft, 25mm body diameter | Product page | 90g each |
 | 2S LiPo 2200mAh | 7.4V nominal, 8.4V full, 6.4V cutoff, 97-130g depending on model | Gens Ace product page | ~110g |
 | XT30 Connector | 30A continuous, gold plated, compact | XT30 spec | 3g per pair |
@@ -83,7 +83,7 @@ Voltage range: 6.4V (discharged) to 8.4V (fully charged). 7A-rated polyfuse on i
 
 Powers: ESP32, MPU-6050, TB6612FNG logic, sensor pull-ups, LEDs.
 
-**Input: 5V rail (from MP1584EN output) — NOT from VBAT directly.**
+**Input: 5V rail (from D24V50F5 output) — NOT from VBAT directly.**
 
 Reason: At 8.4V VBAT input, the AMS1117 dissipates (8.4 - 3.3) x 0.27A = 1.38W. In SOT-223, that is a junction temperature of ~135C at 25C ambient, which is at or above the 125C maximum rating. Fed from 5V instead, dissipation is (5.0 - 3.3) x 0.27A = 0.46W, junction temperature ~62C. Safe.
 
@@ -93,20 +93,21 @@ Caps: 10uF electrolytic + 100nF ceramic on both input and output pins. Required 
 
 Max load: ~270mA. Rated 800mA. Adequate headroom.
 
-**5V Rail: MP1584EN Buck Converter**
+**5V Rail: Pololu D24V50F5 Buck Converter (5V, 5A)**
 
-> Correction from earlier revision: MP2307 was originally specified. MP2307 is rated 1.2A. Pi 4 draws up to 3A under inference. That would have burned out the converter mid-demo. MP1584EN is rated 3A. This is the correct part.
+> Revision history: MP2307 (1.2A) was the original part — far too small, would have burned out. Then MP1584EN (3A) — adequate but tight: Pi at 2.5-3.0A + AMS1117 cascade 0.27A = ~2.77A on a 3A part, marginal once derated for an enclosed chassis. Final part is the **D24V50F5 (5A)** for real headroom on the most demo-critical rail. Pi brownout is the #1 demo-killer, so this rail gets margin.
 
 Input: VBAT (6.4-8.4V)
-Output: 5.0V (set via feedback resistor divider, per section 7 of MP1584EN datasheet)
+Output: 5.0V (fixed — no trimpot to set, unlike the MP1584EN module)
+EN pin: tie to VIN or leave floating (internal pull-up enables by default). PG (power-good) pin optional.
 
-**Total 5V load: Pi 2.5A + AMS1117 cascade 0.27A = 2.77A.** MP1584EN rated 3A. Margin is 230mA — thin but adequate. In an enclosed chassis, derate to ~2.6A continuous. The margin holds under normal operation. If the chassis runs hot (hand-warm inside after 10 minutes), add a small copper pour or pad vent hole above the MP1584EN. Thermal pad on MP1584EN must be soldered to copper pour — same rule as TB6612FNG.
+**Total 5V load: Pi 2.5A (3.0A peak) + AMS1117 cascade 0.27A = ~2.77A.** D24V50F5 rated 5A. Margin is over 2A — comfortable even with a USB speaker on the Pi and full enclosure derating. This is deliberate headroom on the rail whose failure (Pi brownout) most reliably kills a demo.
 
 **Output capacitors — updated from earlier revision:**
 - 1000uF electrolytic (upgraded from 100uF based on Pi 4 inrush spike analysis)
 - 100nF ceramic in parallel
 
-Why 1000uF: When the Pi 4 CPU ramps from idle to full inference load, it draws a current spike faster than the MP1584EN's control loop can respond (~microseconds). The 1000uF cap supplies that spike locally while the converter catches up. At a 3A spike for 1ms, 1000uF holds the voltage within 3mV of setpoint. 100uF would sag by 30mV — enough to trigger the Pi's undervoltage warning.
+Why 1000uF: When the Pi 4 CPU ramps from idle to full inference load, it draws a current spike faster than the converter's control loop can respond (~microseconds). The 1000uF cap supplies that spike locally while the converter catches up. At a 3A spike for 1ms, 1000uF holds the voltage within 3mV of setpoint. 100uF would sag by 30mV — enough to trigger the Pi's undervoltage warning. Keep this cap even with the 5A buck — it handles the fast transient the regulator's loop can't.
 
 5V connects to Pi via 2-pin header to GPIO pin 2 (5V) and pin 6 (GND). Do not use the Pi USB-C port for power — cable run outside chassis is mechanically fragile.
 
@@ -141,7 +142,7 @@ Component count: 2x 470uF (one per TB6612FNG IC), placed within 3mm of the VM pi
 **Decoupling cap placement rules:**
 - 100nF ceramic caps: within 2mm of every IC power pin
 - 470uF motor bulk caps: within 3mm of TB6612FNG VM pins
-- 1000uF Pi rail cap: within 5mm of MP1584EN output
+- 1000uF Pi rail cap: within 5mm of D24V50F5 output
 - All caps connect to ground plane via short vias, not via trace segments
 
 ### Block 5 — IMU: MPU-6050
@@ -251,7 +252,7 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 | **Motor reversal transient** | | | ~4.4A for <50ms | Absorbed by 470uF caps |
 | **All motors stalled** | | ~8.8A sustained | | Polyfuse trips at 5A |
 
-**Note on speaker peak:** the ~600mA speaker peak is brief (during a sound clip) and stacks on the 5V rail. The MP1584EN at 2.77A (Pi + AMS1117 cascade) plus a 600mA speaker peak approaches 3.4A — over the 3A rating for the duration of a loud clip. Keep clip volume moderate, or power the speaker from a USB power bank / the Pi USB port rather than the 5V buck rail. Do not play sound clips during peak motor + inference load if the rail is marginal.
+**Note on speaker peak:** the ~600mA speaker peak is brief (during a sound clip) and stacks on the 5V rail. With the 5A D24V50F5, total worst case (~2.77A + 0.6A = ~3.4A) sits comfortably under 5A — the speaker no longer threatens the rail. (This was a real concern on the old 3A part; the 5A upgrade resolves it.)
 
 **Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At ~35W normal draw: ~27 minutes. Sufficient for demo. If runtime is marginal, upgrade to 3000mAh LiPo (same voltage, same connectors, adds ~35g).
 
@@ -278,7 +279,7 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 Before trusting any demo, run these tests in order. If the robot passes all four, the power system is solid.
 
 **Test 1 — Full throttle forward for 30 seconds**
-Command CMD:F,255. Measure battery voltage at start and end. Should not sag more than 0.3V. Feel the TB6612FNG ICs and MP1584EN — should be warm but not hot. If either TB6612FNG is too hot to touch, increase copper pour area under it.
+Command CMD:F,255. Measure battery voltage at start and end. Should not sag more than 0.3V. Feel the TB6612FNG ICs and the D24V50F5 module — should be warm but not hot. If either TB6612FNG is too hot to touch, increase copper pour area under it.
 
 **Test 2 — Repeated hard reversal**
 Alternate CMD:F,255 and CMD:B,255 every 2 seconds, 20 times. Watch for ESP32 resets or Pi undervoltage icon. None should occur. This is the worst case for back-EMF transients and TB6612FNG thermal stress.
@@ -299,7 +300,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ### 2. RPi Brownout from 5V Sag
 **Cause:** Pi current spike faster than buck converter response.
-**Mitigation:** MP1584EN (3A rated) + 1000uF output cap. Cap supplies the spike while converter catches up.
+**Mitigation:** D24V50F5 (5A rated, ~2A headroom over load) + 1000uF output cap. Regulator supplies sustained current with margin; cap covers the fast transient its loop can't.
 
 ### 3. Ghost Resets from Ground Bounce
 **Cause:** Motor switching current through shared ground traces injects noise into ESP32 GND reference.
@@ -366,10 +367,10 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] TB6612FNG x2 — all control pins connected, STBY tied HIGH
 - [ ] 470uF bulk cap at each TB6612FNG VM pin (2 caps total)
 - [ ] AMS1117-3.3 with 10uF + 100nF on input and output
-- [ ] MP1584EN with feedback resistors for 5.0V output and 1000uF + 100nF output caps
+- [ ] D24V50F5 (5V/5A) module placed; VIN←VBAT, VOUT→+5V; 1000uF + 100nF output caps (no FB resistors — fixed output)
 - [ ] Reverse polarity MOSFET on VBAT input
 - [ ] 7A-rated polyfuse on VBAT line (Littelfuse RGEF700 or equivalent — NOT a 5A part)
-- [ ] AMS1117-3.3 input connected to 5V rail (MP1584EN output) — NOT to VBAT
+- [ ] AMS1117-3.3 input connected to 5V rail (D24V50F5 output) — NOT to VBAT
 - [ ] 1k/2k voltage dividers on all 3 HC-SR04 Echo lines (6 resistors)
 - [ ] 4.7k I2C pull-ups on SDA and SCL to 3.3V
 - [ ] Battery voltage sense divider (10k + 3.3k) to ESP32 ADC pin (GPIO36)
@@ -383,9 +384,9 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] Stitching vias every 10mm across board area
 - [ ] Single star ground entry at XT30 negative terminal
 - [ ] TB6612FNG exposed thermal pad connected to GND copper pour (NOT floating) — verify in KiCad footprint properties
-- [ ] MP1584EN exposed thermal pad connected to copper pour on top layer
+- [ ] D24V50F5 module footprint matches Pololu pin layout; GND pads to ground pour
 - [ ] 470uF bulk caps within 3mm of each TB6612FNG VM pin
-- [ ] 1000uF cap within 5mm of MP1584EN output pin
+- [ ] 1000uF cap within 5mm of D24V50F5 output pin
 - [ ] All 100nF decoupling caps within 2mm of IC power pins
 - [ ] TB6612FNG placed adjacent to motor output connectors
 - [ ] Motor output traces >= 1.2mm
