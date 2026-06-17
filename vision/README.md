@@ -125,22 +125,43 @@ Every frame:
 1. Run YOLOv8n-pose inference on the camera frame
 2. Select the target person (see Person Selection below)
 3. Get their bounding box center X position
-4. Calculate offset from frame center:
+4. Calculate offset from frame center (smoothed):
 
 ```python
-offset = (box_center_x - frame_width / 2) / (frame_width / 2)
+# Exponential moving average prevents jitter from single-frame keypoint noise
+smoothed_offset = 0.0  # initialize at module level
+
+def get_smoothed_offset(box_center_x, frame_width):
+    global smoothed_offset
+    raw_offset = (box_center_x - frame_width / 2) / (frame_width / 2)
+    smoothed_offset = 0.7 * smoothed_offset + 0.3 * raw_offset
+    return smoothed_offset
+
+offset = get_smoothed_offset(box_center_x, frame_width)
 # offset range: -1.0 (person far left) to +1.0 (person far right)
 # offset near 0.0 = person is centered = go straight
 ```
 
-5. Estimate distance using bounding box height:
+Why: At 200ms control loop latency, a single noisy frame that puts the offset at +0.4 sends a hard right command. The robot turns, camera sees person now to the left, sends hard left command — system oscillates. The EMA (alpha=0.3) means a single bad frame contributes only 30% of the new value, dampening transient noise without adding lag to real tracking.
+
+5. Estimate distance using bounding box height (smoothed):
 
 ```python
-box_height_ratio = box_height / frame_height
+# Use a rolling average — raw bbox height is noisy (posture changes, camera shake)
+from collections import deque
+bbox_height_history = deque(maxlen=5)
+
+def get_smoothed_height_ratio(box_height, frame_height):
+    bbox_height_history.append(box_height / frame_height)
+    return sum(bbox_height_history) / len(bbox_height_history)
+
+box_height_ratio = get_smoothed_height_ratio(box_height, frame_height)
 # ratio > 0.7 = person very close = slow down or stop
 # ratio < 0.2 = person far away = speed up
 # ratio 0.3-0.5 = comfortable following distance = normal speed
 ```
+
+Why: A person bending over, turning sideways, or moving their arms changes the bounding box height by 10-30% in a single frame. Without smoothing, the system misreads this as a distance change and sends spurious speed commands — robot oscillates forward and backward.
 
 6. Translate offset and distance into a command:
 
@@ -226,6 +247,14 @@ else:
 if raised_frames  >= THRESHOLD:
     state = "WAITING"
 if lowered_frames >= THRESHOLD:
+    state = "FOLLOWING"
+
+if raised_frames >= THRESHOLD and state != "WAITING":
+    state = "WAITING"
+    ser.flush()          # flush write buffer before going silent
+    send_serial("CMD:S,0")
+
+if lowered_frames >= THRESHOLD and state != "FOLLOWING":
     state = "FOLLOWING"
 
 if state == "WAITING":
