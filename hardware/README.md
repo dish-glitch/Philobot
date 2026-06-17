@@ -147,6 +147,41 @@ Mount flat and horizontal on the PCB. 4.7k pull-ups on SDA and SCL to 3.3V. ESP3
 
 Implement I2C bus recovery routine in firmware (9 SCL clocks with SDA held high) to clear SDA-stuck-low lockups from Pi resets mid-transaction.
 
+**I2C address map (three devices on one bus):**
+
+| Device | I2C Address | Function |
+|---|---|---|
+| MPU-6050 | 0x68 | Tilt / tip-over detection |
+| OLED left eye | 0x3C | Companion display |
+| OLED right eye | 0x3D | Companion display |
+
+The 4.7k pull-ups are adequate for all three devices on a short bus (under ~15cm total trace length). Keep the I2C traces short and route them away from motor traces.
+
+### Block 5b — Companion Display: 2x OLED Eyes
+
+Philo is a companion robot, so it has an animated face. Two SSD1306 (or SH1106) OLED modules, 128x64, I2C, mounted at the top of the camera mast as eyes.
+
+- Addresses 0x3C and 0x3D, set by the address-select pad on each module (most SSD1306 breakouts have a solderable jumper to pick 0x3C or 0x3D)
+- Power: 3.3V, ~20mA each (~40mA total) — negligible
+- Driven by the ESP32 on core 1 (see firmware README — full refresh is ~23ms per display, so it must NOT run in the control loop)
+- Connect via the existing I2C bus — no new GPIO pins needed
+
+**Mechanical:** hummos430 needs two OLED-sized cutouts in the front of the camera mast head, positioned as eyes. OLED active area is ~22mm x 11mm; module PCB is ~27mm x 27mm. Mount with M2 screws or a friction pocket.
+
+### Block 5c — Audio: handled by the Raspberry Pi, NOT the ESP32
+
+Sound (personality chirps, "found you" / "waiting" clips) is driven by the Raspberry Pi, not the ESP32.
+
+**Why not the ESP32:** the ESP32 is nearly out of usable GPIO. The only free pins (0, 12, 15) are all boot-strapping pins, which makes driving an I2S speaker amp off them fragile. The Pi has free USB ports, a filesystem for WAV clips, and trivial audio playback (aplay). It also already knows the high-level state (found/lost/gesture) that should trigger sounds.
+
+**Hardware (Pi side, not on this PCB):**
+- A cheap USB audio adapter + small amplified speaker, OR a small self-powered USB speaker
+- Powered from the Pi USB port (small speaker) or tapped from the 5V rail (budget ~600mA peak, intermittent — see power budget)
+
+This keeps audio entirely off the custom PCB. The only PCB impact is the power budget allowance if the speaker is fed from the 5V rail. See vision README for the clip-playback software.
+
+> Live ChatGPT voice conversation is explicitly a V2 / post-demo feature, not part of this build. It would require a microphone chain and would compete with YOLOv8 for the Pi's already-maxed CPU. For V1, audio is pre-recorded clips only.
+
 ### Block 6 — Ultrasonic Sensors: HC-SR04 x3
 
 Mount on chassis, connect via 4-pin headers. Echo pins MUST go through voltage dividers before reaching ESP32 GPIO — HC-SR04 echo is 5V, ESP32 max input is 3.6V.
@@ -204,12 +239,16 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 | ESP32 (active, WiFi off) | 3.3V | 240mA | 340mA | Espressif datasheet |
 | 3x HC-SR04 | 5V | 45mA | same | HC-SR04 datasheet |
 | MPU-6050 | 3.3V | 3.9mA | same | InvenSense datasheet |
+| 2x OLED eyes | 3.3V | 40mA | same | SSD1306 spec |
+| Speaker (Pi-side, if on 5V rail) | 5V | 50mA idle | ~600mA peak (intermittent) | MAX98357A / USB speaker spec |
 | Misc (LEDs, pull-ups) | 3.3V | 20mA | same | Estimated |
-| **Total normal operation** | | ~4.7A | | |
+| **Total normal operation** | | ~4.8A | | |
 | **Motor reversal transient** | | | ~4.4A for <50ms | Absorbed by 470uF caps |
 | **All motors stalled** | | ~8.8A sustained | | Polyfuse trips at 5A |
 
-**Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At 34.8W normal draw: ~28 minutes. Sufficient for demo. If runtime is marginal, upgrade to 3000mAh LiPo (same voltage, same connectors, adds ~35g).
+**Note on speaker peak:** the ~600mA speaker peak is brief (during a sound clip) and stacks on the 5V rail. The MP1584EN at 2.77A (Pi + AMS1117 cascade) plus a 600mA speaker peak approaches 3.4A — over the 3A rating for the duration of a loud clip. Keep clip volume moderate, or power the speaker from a USB power bank / the Pi USB port rather than the 5V buck rail. Do not play sound clips during peak motor + inference load if the rail is marginal.
+
+**Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At ~35W normal draw: ~27 minutes. Sufficient for demo. If runtime is marginal, upgrade to 3000mAh LiPo (same voltage, same connectors, adds ~35g).
 
 **Why the polyfuse trips at all-motors-stall:** 4x JGA25-370 at 7.4V stall current ~1.5-2.2A each = 6-8.8A total. Polyfuse rated 5A trips within 1-2 seconds at 8A. This is the correct protective behavior.
 
