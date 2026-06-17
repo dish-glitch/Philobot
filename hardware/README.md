@@ -22,6 +22,7 @@ Every part below has been cross-referenced against its datasheet or product page
 | HC-SR04 x3 | 5V, <15mA, 2-400cm range, 40kHz, 45x20x15mm | [Sparkfun datasheet](https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf) | 10g each |
 | AMS1117-3.3 LDO | 3.3V out, 800mA max, SOT-223 package | AMS datasheet | <1g |
 | MP1584EN Buck Converter | 4.5-28V in, adjustable out, 3A continuous, 1.5MHz switching, SOP-8 | MPS datasheet | <1g |
+| JGA25-370 x4 | 6V, 200 RPM, 1.8-2.2 kg*cm stall torque, 4mm D-shaft, 25mm body diameter | Product page | 90g each |
 | 2S LiPo 2200mAh | 7.4V nominal, 8.4V full, 6.4V cutoff, 97-130g depending on model | Gens Ace product page | ~110g |
 | XT30 Connector | 30A continuous, gold plated, compact | XT30 spec | 3g per pair |
 
@@ -57,7 +58,9 @@ Two TB6612FNG ICs. Each drives two motors. Total: 4 motors driven.
 - VM to VBAT (motor voltage, up to 13.5V)
 - VCC to 3.3V logic
 
-**Back-EMF on motor reversal:** When a motor is commanded to reverse direction mid-spin, it briefly acts as a generator. This creates a voltage spike back into the VM pin. The TB6612FNG has internal flyback diodes on all output transistors that clamp this spike to VM. This is one advantage of the TB6612FNG over discrete H-bridge designs — the protection is built in. The 470uF bulk cap at each TB6612FNG VM pin (see Section: Ground Architecture and Decoupling) further absorbs these transients.
+**TB6612FNG thermal note with JGA25-370 motors:** The JGA25-370 at 7.4V running at 40% load draws ~0.5A per motor — well within the 1.2A continuous rating. However, at brief stall (before the firmware watchdog triggers at 500ms), stall current at 7.4V can reach 1.5-2.2A per motor, exceeding the 1.2A continuous rating but within the 3.2A peak. The IC handles this for brief moments. Ensure the TB6612FNG KiCad footprint has its exposed thermal pad (bottom of QFN package) connected to a GND copper pour on the PCB. This provides a thermal path from the die to the board. If either IC is hot to the touch after Test 2 (repeated reversals), increase the copper pour area under the chip.
+
+**Back-EMF on motor reversal:** When a motor is commanded to reverse direction mid-spin, it briefly acts as a generator. This creates a voltage spike back into the VM pin. The TB6612FNG has internal flyback diodes on all output transistors that clamp this spike to VM. The 470uF bulk cap at each TB6612FNG VM pin (see Section: Ground Architecture and Decoupling) further absorbs these transients.
 
 **Placement:** Both TB6612FNG ICs on the same side as motor output connectors. Motor output traces (AO1, AO2, BO1, BO2) minimum 1.2mm. Short and direct to connectors.
 
@@ -130,7 +133,7 @@ Component count: 2x 470uF (one per TB6612FNG IC), placed within 3mm of the VM pi
 
 Connects via I2C (SDA/SCL). Default address 0x68. Document I2C address map.
 
-Mount flat and horizontal on the PCB. 4.7kΩ pull-ups on SDA and SCL to 3.3V. ESP32 internal pull-ups are too weak for reliable I2C.
+Mount flat and horizontal on the PCB. 4.7k pull-ups on SDA and SCL to 3.3V. ESP32 internal pull-ups are too weak for reliable I2C.
 
 Implement I2C bus recovery routine in firmware (9 SCL clocks with SDA held high) to clear SDA-stuck-low lockups from Pi resets mid-transaction.
 
@@ -147,6 +150,8 @@ HC-SR04 Echo (5V) ---- 1k ----+---- ESP32 GPIO (3.33V)
 ```
 
 Trigger lines (3.3V from ESP32) accepted by HC-SR04 as valid HIGH — no shifting needed.
+
+**HC-SR04 crosstalk — CRITICAL:** Do not fire multiple sensors simultaneously. All three HC-SR04 units operate at 40kHz. If sensor A fires while sensor B is listening, sensor B will hear sensor A's pulse as a reflection and report a phantom obstacle a few centimeters away. This will trigger the escape sequence every cycle. Firmware must fire sensors sequentially with a 60ms delay between each. See firmware README for timing diagram.
 
 **Cable routing for sensor wires:** Keep HC-SR04 cables short (under 20cm). Do not run them parallel to motor cables. EMI from motor PWM at 20kHz couples capacitively into parallel wires and adds noise to the echo timing. Use a twisted pair or at minimum route sensor cables along the opposite edge of the chassis from motor cables.
 
@@ -165,7 +170,7 @@ Add hardware indicators so failures are visible immediately during testing:
 A resistor divider from VBAT to an ESP32 ADC pin lets the firmware monitor battery voltage:
 
 ```
-VBAT ---- 10k ----+---- ESP32 ADC (GPIO34 or GPIO35, input-only pins)
+VBAT ---- 10k ----+---- ESP32 ADC (GPIO36, input-only pin)
                   |
                  3.3k
                   |
@@ -184,18 +189,21 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 | Component | Voltage Rail | Typical Current | Peak (transient) | Source |
 |---|---|---|---|---|
 | Raspberry Pi 4 (inference load) | 5V | 2.5A | 3.0A | Official Pi 4 power spec |
-| 4x N20 motors (running load) | VBAT | 480mA total | 5.6A (reversal back-EMF transient, <50ms) | Motor spec + back-EMF analysis |
+| 4x JGA25-370 motors (running load at 40% torque) | VBAT | 2.0A total | 8.8A (all motors stall at 7.4V — polyfuse trips) | Motor spec + stall analysis |
+| 4x JGA25-370 motor reversal transient | VBAT | — | ~4.4A for <50ms | Back-EMF analysis (2 motors reverse at once) |
 | ESP32 (active, WiFi off) | 3.3V | 240mA | 340mA | Espressif datasheet |
 | 3x HC-SR04 | 5V | 45mA | same | HC-SR04 datasheet |
 | MPU-6050 | 3.3V | 3.9mA | same | InvenSense datasheet |
 | Misc (LEDs, pull-ups) | 3.3V | 20mA | same | Estimated |
-| **Total normal operation** | | ~3.3A | | |
-| **Motor reversal transient** | | | ~5.6A for <50ms | Absorbed by 470uF caps |
-| **All motors stalled** | | ~6.0A sustained | | Polyfuse trips |
+| **Total normal operation** | | ~4.7A | | |
+| **Motor reversal transient** | | | ~4.4A for <50ms | Absorbed by 470uF caps |
+| **All motors stalled** | | ~8.8A sustained | | Polyfuse trips at 5A |
 
-**Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At 24.4W normal draw: ~40 minutes. Sufficient for demo and test runs.
+**Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At 34.8W normal draw: ~28 minutes. Sufficient for demo. If runtime is marginal, upgrade to 3000mAh LiPo (same voltage, same connectors, adds ~35g).
 
-**Why the transient number matters:** 5.6A for 50ms is 0.28 coulombs. A 470uF cap can supply 0.47 coulombs at 1V sag. Two 470uF caps (one per TB6612FNG) combined handle this without the battery seeing any significant transient. This is why the bulk caps are non-optional.
+**Why the polyfuse trips at all-motors-stall:** 4x JGA25-370 at 7.4V stall current ~1.5-2.2A each = 6-8.8A total. Polyfuse rated 5A trips within 1-2 seconds at 8A. This is the correct protective behavior.
+
+**Motor reversal transient:** During reversal, motor acts as generator. Two motors reversing simultaneously gives ~4.4A transient for <50ms. Two 470uF caps at TB6612FNG VM pins (one per IC) absorb this: 0.47 coulombs capacity, transient requires 0.22 coulombs. Handled without sag.
 
 ---
 
@@ -203,7 +211,7 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 
 | Net | Max Current | Minimum Width | Notes |
 |---|---|---|---|
-| VBAT input | 6A peak | 2.5mm | Size for fault condition |
+| VBAT input | 9A peak (stall) | 2.5mm | Size for fault condition |
 | Motor outputs (per TB6612FNG channel) | 1.2A cont, 3.2A peak | 1.2mm | Short, direct to connector |
 | 5V RPi rail | 3A | 1.5mm | Full Pi inference current |
 | 3.3V logic rail | 500mA | 0.8mm | Include margin |
@@ -216,13 +224,13 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 Before trusting any demo, run these tests in order. If the robot passes all four, the power system is solid.
 
 **Test 1 — Full throttle forward for 30 seconds**
-Command CMD:F,255. Measure battery voltage at start and end. Should not sag more than 0.3V. Feel the TB6612FNG ICs and MP1584EN — should be warm but not hot.
+Command CMD:F,255. Measure battery voltage at start and end. Should not sag more than 0.3V. Feel the TB6612FNG ICs and MP1584EN — should be warm but not hot. If either TB6612FNG is too hot to touch, increase copper pour area under it.
 
 **Test 2 — Repeated hard reversal**
-Alternate CMD:F,255 and CMD:B,255 every 2 seconds, 20 times. Watch for ESP32 resets or Pi undervoltage icon. None should occur. This is the worst case for back-EMF transients.
+Alternate CMD:F,255 and CMD:B,255 every 2 seconds, 20 times. Watch for ESP32 resets or Pi undervoltage icon. None should occur. This is the worst case for back-EMF transients and TB6612FNG thermal stress.
 
 **Test 3 — Stall one wheel**
-Block one wheel by hand for 3 seconds. Robot should not reset. Polyfuse should not trip (single motor stall is ~700mA, well under 5A). Release and confirm motors spin up correctly.
+Block one wheel by hand for 3 seconds. Robot should not reset. Polyfuse should not trip (single motor stall is ~1.8A, well under 5A). Release and confirm motors spin up correctly.
 
 **Test 4 — Full system under inference**
 Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd measure_temp). Target under 70C with heatsink. If throttling occurs (check with vcgencmd get_throttled), add a 30mm fan.
@@ -232,8 +240,8 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 ## Failure Mode Analysis
 
 ### 1. Motor Burn from Sustained Stall
-**Cause:** Wheel jammed, motor at stall current (700mA) indefinitely. N20 motor overheats in under 2 minutes.
-**Mitigation:** 5A polyfuse trips on full 4-motor stall. Watchdog stops motors within 500ms of lost Pi comms. Obstacle escape sequence prevents sustained stall in normal operation.
+**Cause:** Wheel jammed, motor at stall current (~1.5-2.2A at 7.4V) indefinitely.
+**Mitigation:** 5A polyfuse trips on 3+ motor stall. Watchdog stops motors within 500ms of lost Pi comms. Obstacle escape sequence prevents sustained stall in normal operation.
 
 ### 2. RPi Brownout from 5V Sag
 **Cause:** Pi current spike faster than buck converter response.
@@ -271,6 +279,14 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 **Cause:** Pi 4 SoC reaches 80C without heatsink. Throttles from 1.8GHz to 1.5GHz (then 1.0GHz at 85C). Drops YOLO FPS. Slows following response.
 **Mitigation:** Self-adhesive aluminum heatsink on Pi 4 SoC (BCM2711 chip). Reduces operating temp by 15-20C. If still throttling: 30mm 5V blower fan mounted on chassis directed at Pi.
 
+### 11. HC-SR04 Simultaneous Firing (Crosstalk)
+**Cause:** All three sensors fired at the same time. Sensor B hears Sensor A's pulse as a phantom reflection at ~0 cm. ESP32 registers a phantom wall directly in front and triggers the escape sequence every cycle.
+**Mitigation:** Sequential sensor firing with 60ms minimum delay between each sensor. Never fire more than one sensor at a time. See firmware README for timing implementation.
+
+### 12. TB6612FNG Overheating with JGA25-370
+**Cause:** JGA25-370 stall current (1.5-2.2A at 7.4V) exceeds TB6612FNG continuous rating (1.2A). Sustained near-stall conditions cause IC to overheat.
+**Mitigation:** Exposed thermal pad on TB6612FNG QFN package must be connected to GND copper pour in KiCad footprint. Firmware watchdog and obstacle avoidance prevent sustained stall. Run Test 2 and confirm ICs are warm but not hot.
+
 ---
 
 ## PCB Design Checklist
@@ -285,7 +301,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] 5A polyfuse on VBAT line
 - [ ] 1k/2k voltage dividers on all 3 HC-SR04 Echo lines (6 resistors)
 - [ ] 4.7k I2C pull-ups on SDA and SCL to 3.3V
-- [ ] Battery voltage sense divider (10k + 3.3k) to ESP32 ADC pin
+- [ ] Battery voltage sense divider (10k + 3.3k) to ESP32 ADC pin (GPIO36)
 - [ ] Boot button (GPIO0 to GND)
 - [ ] Reset button (EN to GND with 10k pull-up)
 - [ ] Status LED with ~100 ohm current limiting resistor
@@ -295,6 +311,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] Ground plane poured on bottom copper layer, net = GND
 - [ ] Stitching vias every 10mm across board area
 - [ ] Single star ground entry at XT30 negative terminal
+- [ ] TB6612FNG exposed thermal pad connected to GND copper pour (NOT floating)
 - [ ] 470uF bulk caps within 3mm of each TB6612FNG VM pin
 - [ ] 1000uF cap within 5mm of MP1584EN output pin
 - [ ] All 100nF decoupling caps within 2mm of IC power pins
