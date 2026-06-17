@@ -19,7 +19,7 @@ Built with PlatformIO. Framework: Arduino (simpler than ESP-IDF for this use cas
 | Receive direction + speed commands | UART from Raspberry Pi at 115200 baud |
 | Drive motors | PWM via ESP32 LEDC peripheral, 20kHz frequency |
 | Control speed closed-loop | PID per motor side using encoder pulse counting |
-| Read ultrasonic sensors | Timed pulse on trigger, measure echo pulse width |
+| Read ultrasonic sensors | Timed pulse on trigger, measure echo pulse width, sequential only |
 | Override Pi commands on obstacle | Priority layer — safety above navigation |
 | Detect tip-over | Read MPU-6050 pitch angle over I2C |
 | Watchdog | Stop motors if no command received in 500ms |
@@ -39,13 +39,13 @@ Built with PlatformIO. Framework: Arduino (simpler than ESP-IDF for this use cas
 | `R` | Turn right |
 | `S` | Stop |
 
-**Speed:** 0–255 (maps to PWM duty cycle, 0 = stopped, 255 = full speed)
+**Speed:** 0-255 (maps to PWM duty cycle, 0 = stopped, 255 = full speed)
 
 **Examples:**
 ```
-CMD:F,180\n    → drive forward at ~70% speed
-CMD:L,120\n    → turn left at ~47% speed
-CMD:S,0\n      → stop
+CMD:F,180\n    -> drive forward at ~70% speed
+CMD:L,120\n    -> turn left at ~47% speed
+CMD:S,0\n      -> stop
 ```
 
 The ESP32 parses each line as it arrives. If a line is malformed or the watchdog timer expires (no command for 500ms), motors stop immediately.
@@ -80,15 +80,30 @@ Each side has its own PID instance. This is what keeps the robot driving straigh
 
 Three HC-SR04 sensors: front-left, front-center, front-right.
 
-**Reading a sensor (one sensor at a time, polled in sequence):**
+### CRITICAL: Fire sensors sequentially, never simultaneously
+
+**DO NOT fire all three HC-SR04 sensors at the same time.** If multiple sensors fire simultaneously, each sensor may pick up the ultrasonic pulse from another sensor rather than its own reflection. This causes false short-range readings (phantom walls) that trigger the obstacle escape sequence repeatedly.
+
+**Confirmed failure mode:** Sensor A fires a 40kHz pulse, Sensor B fires at the same time, Sensor B's echo pin goes high from Sensor A's pulse (wrong reflection), ESP32 reads 0.03m where there is no object.
+
+**Fix: 60ms gap between each sensor fire.** Total scan cycle is 180ms for all three sensors.
+
+```
+Timing:
+  t=0ms:    Fire front-center trigger
+  t=60ms:   Read front-center echo, fire front-left trigger
+  t=120ms:  Read front-left echo, fire front-right trigger
+  t=180ms:  Read front-right echo — cycle complete, restart
+```
+
+**Reading one sensor:**
 ```
 1. Pull trigger pin HIGH for 10 microseconds
 2. Pull trigger pin LOW
-3. Measure how long echo pin stays HIGH
-4. distance_cm = echo_duration_us / 58.0
+3. Wait for echo pin to go HIGH (timeout 30ms if nothing detected)
+4. Measure how long echo pin stays HIGH
+5. distance_cm = echo_duration_us / 58.0
 ```
-
-Poll all three sensors every 50ms (20 times per second). Store the last reading for each.
 
 **Priority override (runs before applying Pi command):**
 ```
@@ -104,6 +119,8 @@ else:
 
 The escape sequence is a fixed-time maneuver — it does not check sensors during execution. Simple and predictable.
 
+**Ultrasonic side blind spots:** The HC-SR04 has a ~15 degree cone angle. Objects that approach from a 45-75 degree angle (between the sensor cones) may not be detected until very close. The angled sensor placement mitigates this but does not eliminate it. Do not position the robot such that furniture is approaching from the sides — the sensors only protect the front.
+
 ---
 
 ## Gesture Control Response
@@ -116,9 +133,23 @@ The ESP32 just follows orders. The watchdog timer is important here — if the P
 
 ## IMU — Tip-Over Detection
 
-MPU-6050 over I2C. Read pitch angle every 100ms. If pitch exceeds ±30 degrees (robot tipping forward or backward), cut all motor power immediately and hold until pitch returns to safe range.
+MPU-6050 over I2C. Read pitch angle every 100ms. If pitch exceeds +/-30 degrees (robot tipping forward or backward), cut all motor power immediately and hold until pitch returns to safe range.
 
 This protects the PCB and camera if the robot drives off a ledge or tips on a ramp.
+
+**I2C bus recovery:** Run a 9-clock SCL recovery routine at firmware init before starting the main loop. This clears any stuck-SDA-low condition left over from a hard reset or Pi reboot mid-transaction:
+
+```cpp
+// I2C bus recovery — 9 SCL clocks with SDA high
+void i2c_bus_recovery() {
+    for (int i = 0; i < 9; i++) {
+        digitalWrite(SCL_PIN, HIGH);
+        delayMicroseconds(5);
+        digitalWrite(SCL_PIN, LOW);
+        delayMicroseconds(5);
+    }
+}
+```
 
 ---
 
@@ -126,42 +157,46 @@ This protects the PCB and camera if the robot drives off a ledge or tips on a ra
 
 ```
 firmware/esp32/
-├── platformio.ini          # board = esp32dev, framework = arduino
-├── src/
-│   ├── main.cpp            # setup() and loop()
-│   ├── motor.cpp / .h      # PWM, PID, encoder ISR
-│   ├── ultrasonic.cpp / .h # HC-SR04 polling and priority logic
-│   ├── imu.cpp / .h        # MPU-6050 I2C read, tilt check
-│   └── serial_cmd.cpp / .h # UART parse, watchdog timer
-└── test/                   # unit tests if needed
++-- platformio.ini          # board = esp32dev, framework = arduino
++-- src/
+|   +-- main.cpp            # setup() and loop()
+|   +-- motor.cpp / .h      # PWM, PID, encoder ISR
+|   +-- ultrasonic.cpp / .h # HC-SR04 sequential polling and priority logic
+|   +-- imu.cpp / .h        # MPU-6050 I2C read, tilt check
+|   +-- serial_cmd.cpp / .h # UART parse, watchdog timer
++-- test/                   # unit tests if needed
 ```
 
 ---
 
 ## Pin Assignment (draft — confirm against KiCad schematic)
 
-| Function | ESP32 GPIO |
-|---|---|
-| Left motor PWM | GPIO 25 |
-| Left motor direction A | GPIO 26 |
-| Left motor direction B | GPIO 27 |
-| Right motor PWM | GPIO 32 |
-| Right motor direction A | GPIO 33 |
-| Right motor direction B | GPIO 14 |
-| Left encoder | GPIO 34 |
-| Right encoder | GPIO 35 |
-| Ultrasonic front-center trigger | GPIO 5 |
-| Ultrasonic front-center echo | GPIO 18 |
-| Ultrasonic front-left trigger | GPIO 19 |
-| Ultrasonic front-left echo | GPIO 21 |
-| Ultrasonic front-right trigger | GPIO 22 |
-| Ultrasonic front-right echo | GPIO 23 |
-| IMU SDA | GPIO 21 |
-| IMU SCL | GPIO 22 |
-| UART RX (from Pi TX) | GPIO 16 |
-| UART TX (to Pi RX) | GPIO 17 |
+| Function | ESP32 GPIO | Notes |
+|---|---|---|
+| Left motor PWM | GPIO 25 | LEDC channel |
+| Left motor direction A | GPIO 26 | TB6612FNG AIN1 |
+| Left motor direction B | GPIO 27 | TB6612FNG AIN2 |
+| Right motor PWM | GPIO 32 | LEDC channel |
+| Right motor direction A | GPIO 33 | TB6612FNG BIN1 |
+| Right motor direction B | GPIO 14 | TB6612FNG BIN2 |
+| Left encoder | GPIO 34 | Input-only pin |
+| Right encoder | GPIO 35 | Input-only pin |
+| Ultrasonic front-center trigger | GPIO 5 | |
+| Ultrasonic front-center echo | GPIO 18 | After 1k/2k voltage divider |
+| Ultrasonic front-left trigger | GPIO 19 | |
+| Ultrasonic front-left echo | GPIO 4 | After 1k/2k voltage divider |
+| Ultrasonic front-right trigger | GPIO 13 | |
+| Ultrasonic front-right echo | GPIO 23 | After 1k/2k voltage divider |
+| IMU SDA | GPIO 21 | I2C with 4.7k pull-up to 3.3V |
+| IMU SCL | GPIO 22 | I2C with 4.7k pull-up to 3.3V |
+| UART RX (from Pi TX) | GPIO 16 | |
+| UART TX (to Pi RX) | GPIO 17 | |
+| Battery ADC | GPIO 36 | Input-only, 10k/3.3k divider |
+| Status LED | GPIO 2 | 100 ohm series resistor |
 
 *Note: finalize pin assignments in KiCad before writing firmware. Changing pins after PCB is ordered means hardware rework.*
+
+*Previous revision had a conflict: GPIO 21 was assigned to both ultrasonic front-left echo AND I2C SDA, and GPIO 22 was assigned to both front-right trigger AND I2C SCL. This table resolves both conflicts. Ultrasonic echo uses GPIO 4/18/23; ultrasonic triggers use GPIO 5/13/19; I2C uses GPIO 21/22 as intended.*
 
 ---
 
@@ -172,6 +207,6 @@ firmware/esp32/
 | 4-5 | PCB arrives — write basic motor spin, confirm over serial terminal |
 | 5 | UART command parsing working, robot responds to F/B/L/R/S |
 | 6 | Encoders reading, PID loop running, robot drives straight |
-| 6-7 | Ultrasonic obstacle avoidance working |
+| 6-7 | Ultrasonic obstacle avoidance working (sequential firing confirmed) |
 | 7 | IMU tilt detection, watchdog, full integration with Pi |
 | 8 | Tuning PID, edge cases handled |
