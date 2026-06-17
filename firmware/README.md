@@ -54,9 +54,9 @@ The ESP32 parses each line as it arrives. If a line is malformed or the watchdog
 
 ## Motor Control
 
-**4 motors, 2 sides:**
-- Left side: left-front + left-rear motors wired in parallel to one TB6612FNG channel
-- Right side: right-front + right-rear motors wired in parallel to the other channel
+**4 motors, 4 channels, 2 chips, controlled as 2 sides:**
+- Each motor has its OWN H-bridge channel (left-front, left-rear, right-front, right-rear = 4 channels across 2 TB6612FNG chips). Do NOT parallel two motors onto one channel — two JGA25-370s stall at 3-4.4A combined, over the TB6612FNG 3.2A peak rating.
+- The two left motors share the same control signals (PWM_L/IN1/IN2 on GPIO 25/26/27), so they always move identically. The two right motors share the same control signals (GPIO 32/33/14). Electrically separate channels, logically one "side." See [hardware SCHEMATIC.md](../hardware/SCHEMATIC.md) Sheet 3 for the exact fan-out.
 
 **PWM:** ESP32 LEDC peripheral, 20kHz. Human ears hear up to ~20kHz — running PWM at exactly 20kHz puts motor whine right at the edge of hearing. In practice it is nearly silent compared to lower frequencies.
 
