@@ -8,6 +8,11 @@
 
 The PCB is the central hub of Philo. Everything connects here — motors, sensors, battery, Raspberry Pi, ESP32 firmware. Designed in KiCad, fabricated at JLCPCB (5-board run, ~10 day lead time including shipping).
 
+**For the actual build, start here:**
+- **[BOM.md](BOM.md)** — complete parts list (every IC, module, passive, connector) for ordering and KiCad symbol placement
+- **[SCHEMATIC.md](SCHEMATIC.md)** — net-by-net schematic build plan; build this in KiCad sheet by sheet, then ERC
+- **[../PRE_BUILD_LOCK.md](../PRE_BUILD_LOCK.md)** — what's frozen before the board order
+
 ---
 
 ## Component Specifications (Verified from Datasheets)
