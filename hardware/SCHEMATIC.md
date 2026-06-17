@@ -10,7 +10,7 @@ Reference designators match [BOM.md](BOM.md).
 
 1. **Create project:** `philo_pcb` → opens schematic editor (Eeschema).
 2. **Use hierarchical sheets** (one per section below) or one flat sheet if you prefer. Six logical blocks: Power, MCU, Motor Drivers, Sensors, Companion (I2C mast), Interface.
-3. **Place symbols** from the BOM. For modules (ESP32, MP1584EN, MPU-6050) use the matching module symbol/footprint — Espressif provides the ESP32 one; the others may need a generic header footprint matching the module pin pitch.
+3. **Place symbols** from the BOM. For modules (ESP32, D24V50F5, MPU-6050) use the matching module symbol/footprint — Espressif provides the ESP32 one; the D24V50F5 and MPU-6050 use a generic header footprint matching the module's pin layout/pitch.
 4. **Wire per the net lists below.** Use named net labels (VBAT, +5V, +3V3, GND, etc.) instead of drawing every wire — much cleaner and less error-prone.
 5. **Annotate** (assign reference designators), then **ERC** — fix every error and every meaningful warning.
 6. **Assign footprints**, generate netlist, move to PCB layout (follow the layout checklist in hardware/README).
@@ -24,7 +24,7 @@ Reference designators match [BOM.md](BOM.md).
 Use these named nets everywhere instead of long wires:
 
 - **VBAT** — raw battery, 6.4–8.4V (after fuse + reverse protection)
-- **+5V** — MP1584EN output
+- **+5V** — D24V50F5 buck output (5A)
 - **+3V3** — AMS1117 output
 - **GND** — single net; the ground plane handles the star-ground topology in layout
 
@@ -47,16 +47,17 @@ C10 (100µF elec)    : VBAT → GND   (bulk)
 
 Why: a P-FET body diode conducts drain→source. For protection it must conduct battery→load (so the board powers up) and block on reversal. That requires drain=battery, source=load. If you swap them, the board works normally but the body diode dumps reversed voltage into the Pi/ESP32 when the battery is plugged in backwards — i.e., it fails exactly when you need it. In normal operation source sits at ~VBAT, gate at 0V, so Vgs ≈ -7.4V (fully on); at 8.4V full charge Vgs ≈ -8.4V, within the AOD4185 ±20V gate rating (no Zener clamp needed at 2S). Verify the G/D/S pin order against the actual P-FET datasheet before placing the footprint.
 
-### 5V rail — MP1584EN (U2, module)
+### 5V rail — Pololu D24V50F5 (U2, 5V/5A module)
 ```
-U2.IN+   ← VBAT
-U2.IN-   ← GND
-U2.OUT+  → +5V
-U2.OUT-  → GND
-C7 (1000µF low-ESR) : +5V → GND   (within 5mm of U2 out — Pi inrush)
+U2.VIN   ← VBAT
+U2.GND   → GND
+U2.VOUT  → +5V
+U2.EN    → leave floating (internal pull-up = enabled) or tie to VIN
+U2.PG    → optional (power-good open-drain; can drive an LED or leave unconnected)
+C7 (1000µF low-ESR) : +5V → GND   (within 5mm of U2 VOUT — Pi inrush)
 C8 (100nF)          : +5V → GND
 ```
-Set the module trimpot to **5.0V** with a meter BEFORE soldering it to the board.
+Fixed 5.0V output — no trimpot to set. Match the footprint to the D24V50F5 pin layout (VIN, GND, VOUT, plus EN/PG). ~2A of headroom over the ~2.77A load.
 
 ### 3.3V rail — AMS1117-3.3 (U3)
 ```
