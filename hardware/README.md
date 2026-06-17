@@ -70,11 +70,19 @@ Power failures mid-demo are catastrophic. This block must be correct.
 
 **Input: 2S LiPo via XT30**
 
-Voltage range: 6.4V (discharged) to 8.4V (fully charged). 5A polyfuse on input line — trips at sustained ~5A, resets after cooldown. P-channel MOSFET for reverse polarity protection.
+Voltage range: 6.4V (discharged) to 8.4V (fully charged). 7A-rated polyfuse on input line (e.g., Littelfuse RGEF700) — trips at sustained overcurrent, resets after cooldown. P-channel MOSFET for reverse polarity protection.
+
+**Why 7A, not 5A:** A polyfuse has nonzero resistance that increases as it heats up. A 5A-rated polyfuse at 3A normal load runs warm and its resistance rises to 0.1-0.5 ohm, causing 0.3-1.5V sag on VBAT before it ever trips. A 7A-rated part runs cold at our 3A normal current (resistance stays in milliohm range), so there is no sag during operation. Protection still works — fault currents above 7A trip it cleanly.
 
 **3.3V Rail: AMS1117-3.3 LDO**
 
 Powers: ESP32, MPU-6050, TB6612FNG logic, sensor pull-ups, LEDs.
+
+**Input: 5V rail (from MP1584EN output) — NOT from VBAT directly.**
+
+Reason: At 8.4V VBAT input, the AMS1117 dissipates (8.4 - 3.3) x 0.27A = 1.38W. In SOT-223, that is a junction temperature of ~135C at 25C ambient, which is at or above the 125C maximum rating. Fed from 5V instead, dissipation is (5.0 - 3.3) x 0.27A = 0.46W, junction temperature ~62C. Safe.
+
+One reviewer concern was that cascading from 5V "couples Pi rail noise into ESP32 rail." This is overstated: the AMS1117 is a linear regulator with ~65dB PSRR at low frequencies, meaning 5V ripple is attenuated 1800x at the 3.3V output. If the 5V rail sags badly enough to matter for ESP32, the Pi is already browned out — that is a separate problem addressed by the 1000uF cap.
 
 Caps: 10uF electrolytic + 100nF ceramic on both input and output pins. Required for AMS1117 stability — without them the output oscillates at high frequency.
 
@@ -86,6 +94,8 @@ Max load: ~270mA. Rated 800mA. Adequate headroom.
 
 Input: VBAT (6.4-8.4V)
 Output: 5.0V (set via feedback resistor divider, per section 7 of MP1584EN datasheet)
+
+**Total 5V load: Pi 2.5A + AMS1117 cascade 0.27A = 2.77A.** MP1584EN rated 3A. Margin is 230mA — thin but adequate. In an enclosed chassis, derate to ~2.6A continuous. The margin holds under normal operation. If the chassis runs hot (hand-warm inside after 10 minutes), add a small copper pour or pad vent hole above the MP1584EN. Thermal pad on MP1584EN must be soldered to copper pour — same rule as TB6612FNG.
 
 **Output capacitors — updated from earlier revision:**
 - 1000uF electrolytic (upgraded from 100uF based on Pi 4 inrush spike analysis)
@@ -285,7 +295,23 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ### 12. TB6612FNG Overheating with JGA25-370
 **Cause:** JGA25-370 stall current (1.5-2.2A at 7.4V) exceeds TB6612FNG continuous rating (1.2A). Sustained near-stall conditions cause IC to overheat.
-**Mitigation:** Exposed thermal pad on TB6612FNG QFN package must be connected to GND copper pour in KiCad footprint. Firmware watchdog and obstacle avoidance prevent sustained stall. Run Test 2 and confirm ICs are warm but not hot.
+**Mitigation:** Exposed thermal pad on TB6612FNG QFN package must be connected to GND copper pour in KiCad footprint. Firmware soft-start (PWM ramp over 200ms) reduces startup stall duration. Watchdog and obstacle avoidance prevent sustained stall. Run Test 2 and confirm ICs are warm but not hot.
+
+### 13. Control Loop Oscillation
+**Cause:** 200ms vision-to-motor latency combined with aggressive turn commands. Robot overshoots center, camera now sees person on opposite side, sends opposite turn command, overshoots again. Robot sways left-right following person.
+**Mitigation:** Exponential moving average on offset value in Pi code (0.7 x previous + 0.3 x new). Dead zone ±0.15 already helps but is not sufficient alone. See vision README for implementation.
+
+### 14. Pi/ESP32 State Desync
+**Cause:** Pi sends STOP (enters WAITING state). ESP32 is mid-execution of last forward command. 100-300ms of "ghost motion" occurs — robot moves when it should be stopped.
+**Mitigation:** Pi flushes serial write buffer before entering WAITING state. ESP32 watchdog at 500ms handles the case where Pi goes silent entirely. The residual 100-300ms desync is an accepted limitation of UART-based control without acknowledgment packets.
+
+### 15. Ultrasonic Sensor Dropout Cascade
+**Cause:** HC-SR04 returns no echo (object too close, sensor disconnected, electrical noise). Firmware interprets timeout as either 0cm (triggers escape loop constantly) or max range (treats path as clear when it is not).
+**Mitigation:** Readings outside 2-400cm range flagged as INVALID. Firmware holds last known valid reading for up to 3 cycles (540ms) before reverting to safe default (treat as obstacle at 20cm). See firmware README.
+
+### 16. Zero-Radius Spin Stalls on Carpet
+**Cause:** During in-place spin, wheels skid laterally. Lateral friction coefficient on carpet (~0.65) is 4x higher than rolling resistance (0.15). Required torque per motor for spin: ~0.78 kg*cm vs safe continuous 0.45 kg*cm. Motors are above safe continuous rating during spin.
+**Mitigation:** Never use zero-radius spin (full reversal on one side) on carpet. Use arc turns instead — one side slows to 40%, other at full speed. This produces a gradual turn without lateral wheel scrub. The firmware escape sequence (backing up then turning) is acceptable because the floor surface during backing is known to be open.
 
 ---
 
@@ -298,7 +324,8 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] AMS1117-3.3 with 10uF + 100nF on input and output
 - [ ] MP1584EN with feedback resistors for 5.0V output and 1000uF + 100nF output caps
 - [ ] Reverse polarity MOSFET on VBAT input
-- [ ] 5A polyfuse on VBAT line
+- [ ] 7A-rated polyfuse on VBAT line (Littelfuse RGEF700 or equivalent — NOT a 5A part)
+- [ ] AMS1117-3.3 input connected to 5V rail (MP1584EN output) — NOT to VBAT
 - [ ] 1k/2k voltage dividers on all 3 HC-SR04 Echo lines (6 resistors)
 - [ ] 4.7k I2C pull-ups on SDA and SCL to 3.3V
 - [ ] Battery voltage sense divider (10k + 3.3k) to ESP32 ADC pin (GPIO36)
@@ -311,7 +338,8 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] Ground plane poured on bottom copper layer, net = GND
 - [ ] Stitching vias every 10mm across board area
 - [ ] Single star ground entry at XT30 negative terminal
-- [ ] TB6612FNG exposed thermal pad connected to GND copper pour (NOT floating)
+- [ ] TB6612FNG exposed thermal pad connected to GND copper pour (NOT floating) — verify in KiCad footprint properties
+- [ ] MP1584EN exposed thermal pad connected to copper pour on top layer
 - [ ] 470uF bulk caps within 3mm of each TB6612FNG VM pin
 - [ ] 1000uF cap within 5mm of MP1584EN output pin
 - [ ] All 100nF decoupling caps within 2mm of IC power pins
