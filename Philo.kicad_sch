@@ -1,0 +1,56 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "e6b75d5f-82b0-4e13-a2ef-a855a91f600e")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 124.46 16.002)
+		(size 28.702 27.432)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "2a0614ba-bb14-4583-82db-fac6db3d3a74")
+		(property "Sheetname" "Combined"
+			(at 124.46 15.2904 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "combine.kicad_sch"
+			(at 124.46 44.0186 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Philo"
+				(path "/e6b75d5f-82b0-4e13-a2ef-a855a91f600e"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
