@@ -8,9 +8,11 @@
 
 The PCB is the central hub of Philo. Everything connects here — motors, sensors, battery, Raspberry Pi, ESP32 firmware. Designed in KiCad, fabricated at JLCPCB (5-board run, ~10 day lead time including shipping).
 
+**Current phase: PCB layout.** Schematic is complete — 0 ERC errors, all footprints assigned. KiCad files are in [`hardware/kicad/`](kicad/).
+
 **For the actual build, start here:**
-- **[BOM.md](BOM.md)** — complete parts list (every IC, module, passive, connector) for ordering and KiCad symbol placement
-- **[SCHEMATIC.md](SCHEMATIC.md)** — net-by-net schematic build plan; build this in KiCad sheet by sheet, then ERC
+- **[BOM.md](BOM.md)** — complete parts list (every IC, module, passive, connector) — updated to match annotated schematic ref designators
+- **[SCHEMATIC.md](SCHEMATIC.md)** — net-by-net schematic build plan (completed, for reference)
 - **[../PRE_BUILD_LOCK.md](../PRE_BUILD_LOCK.md)** — what's frozen before the board order
 
 ---
@@ -362,22 +364,24 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ## PCB Design Checklist
 
-**Schematic:**
-- [ ] ESP32-WROOM-32 with 100nF + 10uF decoupling on VCC
-- [ ] TB6612FNG x2 — all control pins connected, STBY tied HIGH
-- [ ] 470uF bulk cap at each TB6612FNG VM pin (2 caps total)
-- [ ] AMS1117-3.3 with 10uF + 100nF on input and output
-- [ ] D24V50F5 (5V/5A) module placed; VIN←VBAT, VOUT→+5V; 1000uF + 100nF output caps (no FB resistors — fixed output)
-- [ ] Reverse polarity MOSFET on VBAT input
-- [ ] 7A-rated polyfuse on VBAT line (Littelfuse RGEF700 or equivalent — NOT a 5A part)
-- [ ] AMS1117-3.3 input connected to 5V rail (D24V50F5 output) — NOT to VBAT
-- [ ] 1k/2k voltage dividers on all 3 HC-SR04 Echo lines (6 resistors)
-- [ ] 4.7k I2C pull-ups on SDA and SCL to 3.3V
-- [ ] Battery voltage sense divider (10k + 3.3k) to ESP32 ADC pin (GPIO36)
-- [ ] Boot button (GPIO0 to GND)
-- [ ] Reset button (EN to GND with 10k pull-up)
-- [ ] Status LED with ~100 ohm current limiting resistor
-- [ ] ERC clean — zero errors
+**Schematic (COMPLETE — 0 ERC errors, all footprints assigned):**
+- [x] ESP32-WROOM-32 with 100nF + 10uF decoupling on VCC
+- [x] TB6612FNG x2 (U6, U7) — all control pins connected, STBY tied HIGH
+- [x] 470uF bulk cap at each TB6612FNG VM pin (2 caps total)
+- [x] AMS1117-3.3 (U5) with 10uF + 100nF on input and output
+- [x] D24V50F5 (5V/5A) module placed via J8; VIN←VBAT, VOUT→+5V; 1000uF + 100nF output caps
+- [x] Reverse polarity MOSFET Q2 (AOD4185 P-channel) on VBAT input
+- [x] 7A-rated polyfuse F2 (Littelfuse RGEF700) on VBAT line
+- [x] AMS1117-3.3 input connected to 5V rail (D24V50F5 output) — NOT to VBAT
+- [x] 1k/2k voltage dividers on all 3 HC-SR04 Echo lines (6 resistors)
+- [x] 4.7k I2C pull-ups on SDA and SCL to 3.3V
+- [x] Battery voltage sense divider (10k + 3.3k) to ESP32 ADC pin (GPIO36)
+- [x] Boot button SW2 (GPIO0 to GND)
+- [x] Reset button SW1 (EN to GND with 10k pull-up)
+- [x] Status LED D1 with 100Ω current limiting resistor R11
+- [x] Test points TP1–TP6 on VBAT, +5V, +3V3, GND, ESP_TX, ESP_RX
+- [x] Encoder connectors J13 (ENC_L) and J14 (ENC_R)
+- [x] ERC clean — 0 errors
 
 **Layout:**
 - [ ] Ground plane poured on bottom copper layer, net = GND
@@ -402,10 +406,10 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ## Timeline
 
-| Week | Target |
-|---|---|
-| 1-2 | Schematic complete — all blocks, all decoupling, all connectors, ERC clean |
-| 2-3 | PCB layout with ground plane, DRC clean |
-| 3 | Gerbers to JLCPCB, 5 boards ordered |
-| 4-5 | PCB arrives, solder, power-on test |
-| 5 | Run electrical stress test protocol before connecting Pi |
+| Week | Target | Status |
+|---|---|---|
+| 1-2 | Schematic complete — all blocks, all decoupling, all connectors, ERC clean | **DONE** |
+| 2-3 | PCB layout with ground plane, DRC clean | Next |
+| 3 | Gerbers to JLCPCB, 5 boards ordered | — |
+| 4-5 | PCB arrives, solder, power-on test | — |
+| 5 | Run electrical stress test protocol before connecting Pi | — |
