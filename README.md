@@ -13,7 +13,7 @@
 
 ## Schematic Preview
 
-*Coming soon — schematic in progress*
+<img width="1435" height="1063" alt="image" src="https://github.com/user-attachments/assets/c237f2eb-55cb-4f29-82f1-52ff88f5388f" />
 
 ---
 
