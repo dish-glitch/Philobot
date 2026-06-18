@@ -154,8 +154,8 @@ Philobot/
 
 | Date | Milestone |
 |---|---|
-| June 17, 2026 | Project started. Repository initialized. Team of 4 assembled. |
-| — | KiCad schematic started — ESP32, motor drivers, power block |
+| June 16, 2026 | Project started. Repository initialized. Team of 4 assembled. |
+| June 17, 2026 | KiCad schematic started — ESP32, motor drivers, power block |
 | — | Chassis dimensions locked in Fusion 360 |
 | — | RPi OS flashed, camera confirmed with libcamera-hello |
 | — | PCB schematic complete, ERC clean |
