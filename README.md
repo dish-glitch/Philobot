@@ -19,7 +19,8 @@
 
 ## PCB Preview
 
-*Coming soon — layout in progress*
+<img width="730" height="597" alt="image" src="https://github.com/user-attachments/assets/4cc0b4a3-e955-4f66-854f-2159c8c0b7e5" />
+
 
 ---
 
