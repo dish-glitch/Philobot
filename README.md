@@ -46,7 +46,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 
 **Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
 
-**Sign language recognition:** The camera also detects ASL hand signs in real time. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Currently works for a subset of letters — model training is ongoing to expand coverage to the full alphabet.
+**Sign language recognition:** The camera also detects ASL hand signs in real time. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Currently works for a subset of letters — model training is ongoing to expand coverage to the full alphabet. (DISCLAMER. This function is VERY limited we are trying to work on it to get better results, this is just an attempt to try something new. )
 
 **Obstacle avoidance:** Three HC-SR04 ultrasonic sensors (front-left at -30 degrees, front-center, front-right at +30 degrees) feed into a priority layer in ESP32 firmware. The Pi handles direction. The ESP32 handles not hitting things. These are separate concerns and intentionally kept that way.
 
