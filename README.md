@@ -34,9 +34,9 @@
 
 Most robotics projects you see online are either a pre-built kit with a tutorial, or a graduate research platform that costs $10,000 and runs ROS on a laptop strapped to a frame. We wanted the middle ground — a robot that does something real and visually impressive, built from scratch at the hardware level, for under $150.
 
-The follow-a-person problem is deceptively hard. The camera has to detect a human, figure out where they are relative to the robot, translate that into motor commands, keep the robot from walking into walls, and do all of it fast enough that the robot does not lag behind. Every layer of that stack — PCB, firmware, vision, chassis — had to be designed and integrated by us. No shields. No pre-built frames. No off-the-shelf motor hat.
+The follow-a-person problem is deceptively hard. The camera has to detect a human, figure out where they are relative to the robot, translate that into motor commands, keep the robot from walking into walls, and do all of it fast enough that the robot does not lag behind. Every layer of that stack — PCB, firmware, vision, chassis — had to be designed and integrated by us.
 
-The gesture control was the detail that made the project feel finished. A robot that follows you is a demo. A robot that freezes when you raise your hand and resumes when you lower it feels like a product.
+
 
 ---
 
