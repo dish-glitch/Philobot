@@ -15,6 +15,11 @@ untitled.kicad_sch
 # Gerber working export folder (clean copy lives in hardware/kicad/gerbers/)
 hardware/kicad/borh/
 
+# ── ML model weights (large binaries — store separately) ─────────────────────
+*.pt
+*.onnx
+*.tflite
+
 # ── PlatformIO build output ───────────────────────────────────────────────────
 .pio/
 firmware/esp32/.vscode/.browse.c_cpp.db*

@@ -44,7 +44,9 @@ The follow-a-person problem is deceptively hard. The camera has to detect a huma
 
 A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the nearest person in frame, and continuously streams direction and speed commands to an ESP32 over UART. The ESP32 runs closed-loop PID speed control on four DC motors via dual H-bridge drivers. Three ultrasonic sensors on the front of the chassis act as an independent safety layer — if an obstacle is detected under 25cm, the ESP32 overrides the Pi command and stops regardless of what the vision stack says.
 
-**Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following.
+**Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
+
+**Sign language recognition:** The camera also detects ASL hand signs in real time. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Currently works for a subset of letters — model training is ongoing to expand coverage to the full alphabet.
 
 **Obstacle avoidance:** Three HC-SR04 ultrasonic sensors (front-left at -30 degrees, front-center, front-right at +30 degrees) feed into a priority layer in ESP32 firmware. The Pi handles direction. The ESP32 handles not hitting things. These are separate concerns and intentionally kept that way.
 
@@ -177,17 +179,20 @@ Philo/
 |---|---|
 | June 16, 2026 | Project started. Repository initialized. Team of 4 assembled. |
 | June 17, 2026 | KiCad schematic started — ESP32, motor drivers, power block |
-| — | Chassis dimensions locked in Fusion 360 |
-| — | RPi OS flashed, camera confirmed with libcamera-hello |
-| — | PCB schematic complete, ERC clean |
-| — | PCB layout complete, DRC clean, Gerbers exported |
+| June 21, 2026 | PCB schematic complete, ERC clean |
+| June 21, 2026 | PCB layout complete, DRC clean, Gerbers exported |
+| June 22, 2026 | ESP32 firmware skeleton complete — all modules compile (motors, encoders, ultrasonic, IMU, OLED, Pi UART) |
+| June 22, 2026 | Gesture stop function confirmed working (tested on Arduino) |
+| June 22, 2026 | Sign language recognition working for subset of letters — OLED display output confirmed. Training ongoing for full alphabet. |
+| June 22, 2026 | Chassis design started in Fusion 360 |
 | — | PCB ordered from JLCPCB |
 | — | Chassis v1 printed in PETG-CF |
 | — | PCB arrived, soldered, power-on test passed |
 | — | Basic motor spin confirmed over serial |
 | — | YOLOv8n-pose running live on RPi, 10+ FPS confirmed |
 | — | First person following — open loop |
-| — | Gesture control working — hand raise stops robot |
+| — | Gesture control working on robot |
+| — | Sign language full alphabet trained and deployed |
 | — | Obstacle avoidance tuned |
 | — | Demo video filmed |
 | Aug 17, 2026 | School starts — project complete |
