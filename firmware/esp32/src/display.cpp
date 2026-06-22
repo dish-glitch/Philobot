@@ -16,7 +16,7 @@ bool display_init() {
         oled.setTextSize(1);
         oled.setTextColor(SSD1306_WHITE);
         oled.setCursor(0, 0);
-        oled.println("Philo boot...");
+        oled.println("Philo booting up...");
         oled.display();
     }
     return ready;

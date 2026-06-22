@@ -1,8 +1,27 @@
-# KiCad backup and temp files
+# ── KiCad generated / temp files ─────────────────────────────────────────────
 *-backups/
 #auto_saved_files#/
+_autosave-*
 *.lck
+~*
 fp-info-cache
 *.bak
 *.kicad_sch-bak
 *.kicad_pcb-bak
+
+# Scratch / one-off files at root
+untitled.kicad_sch
+
+# Gerber working export folder (clean copy lives in hardware/kicad/gerbers/)
+hardware/kicad/borh/
+
+# ── PlatformIO build output ───────────────────────────────────────────────────
+.pio/
+firmware/esp32/.vscode/.browse.c_cpp.db*
+firmware/esp32/.vscode/c_cpp_properties.json
+firmware/esp32/.vscode/launch.json
+firmware/esp32/.vscode/ipch
+
+# ── OS junk ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

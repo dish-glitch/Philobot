@@ -135,18 +135,38 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 ## Repository Structure
 
 ```
-Philobot/
+Philo/
 ├── hardware/
-│   └── kicad/          # Schematic, PCB layout, Gerber files
+│   └── kicad/
+│       ├── Philo.kicad_sch           # Schematic (ESP32, motors, power, sensors)
+│       ├── Philo- main.kicad_pcb     # PCB layout — 100×100mm 2-layer
+│       └── gerbers/                  # Production files ready for JLCPCB
+│           ├── *.gtl / *.gbl         # Front / back copper
+│           ├── *.gts / *.gbs         # Solder mask
+│           ├── *.gto / *.gbo         # Silkscreen
+│           ├── *.gm1                 # Board outline
+│           └── *.drl                 # Drill files
 ├── firmware/
-│   └── esp32/          # PlatformIO project — motor control, PID, serial, ultrasonic
-├── vision/
-│   └── rpi/            # Python — YOLOv8 inference, gesture detection, serial output
+│   └── esp32/
+│       ├── platformio.ini            # PlatformIO config (espressif32 6.9.0)
+│       └── src/
+│           ├── main.cpp              # Entry point — 10 Hz sensor + Pi loop
+│           ├── pins.h                # All GPIO assignments (verified from netlist)
+│           ├── motors.h / .cpp       # TB6612FNG H-bridge control (PWM via LEDC)
+│           ├── encoders.h / .cpp     # Interrupt-based wheel encoder counting
+│           ├── ultrasonic.h / .cpp   # HC-SR04 distance (L / C / R)
+│           ├── imu.h / .cpp          # MPU-6050 over I²C (accel + gyro)
+│           ├── display.h / .cpp      # SSD1306 OLED status display
+│           └── pi_comm.h / .cpp      # UART text protocol to Raspberry Pi
 ├── mechanical/
-│   ├── fusion360/      # Chassis CAD source files
-│   └── stl/            # Print-ready STL files
+│   ├── Philo- main.step              # 3D board export
+│   ├── fusion360/                    # Chassis CAD source files
+│   └── stl/                         # Print-ready STL files
+├── vision/
+│   └── rpi/                         # YOLOv8 inference + gesture detection (Python)
 └── docs/
-    └── images/         # Photos, renders, wiring diagrams
+    ├── images/                       # Photos, renders, wiring diagrams
+    └── PRE_BUILD_LOCK.md             # Design freeze checklist
 ```
 
 ---
@@ -176,14 +196,14 @@ Philobot/
 
 ## Status
 
-- [ ] KiCad schematic
-- [ ] PCB layout
+- [x] KiCad schematic — complete, ERC clean
+- [x] PCB layout — complete, DRC clean, Gerbers exported
+- [x] ESP32 firmware skeleton — all modules compile (motors, encoders, ultrasonic, IMU, OLED, Pi UART)
 - [ ] PCB fabrication (JLCPCB)
 - [ ] Chassis design (Fusion 360)
 - [ ] Chassis printed
-- [ ] Motor control firmware (ESP32)
 - [ ] PID speed loop
-- [ ] Ultrasonic obstacle avoidance
+- [ ] Ultrasonic obstacle avoidance tuning
 - [ ] YOLOv8 person detection live on RPi
 - [ ] Gesture control (hand raise stops, lower resumes)
 - [ ] Full system integration

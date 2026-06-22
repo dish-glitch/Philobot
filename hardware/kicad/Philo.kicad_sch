@@ -10069,7 +10069,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Conn_01x08"
+		(property "Value" "MPU-6050"
 			(at 167.64 81.2799 0)
 			(effects
 				(font
@@ -10132,7 +10132,7 @@
 		(instances
 			(project ""
 				(path "/e6b75d5f-82b0-4e13-a2ef-a855a91f600e"
-					(reference "J15")
+					(reference "U1")
 					(unit 1)
 				)
 			)
