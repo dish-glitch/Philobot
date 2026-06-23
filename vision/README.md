@@ -12,6 +12,33 @@ It also handles gesture control entirely in software — no extra hardware neede
 
 ---
 
+## Serial Protocol (matches the ESP32 firmware)
+
+> **Source of truth:** [`firmware/esp32/src/pi_comm.cpp`](../firmware/esp32/src/pi_comm.cpp). The Pi sends **numeric differential-drive** commands — independent left/right wheel speeds — not direction codes. Independent wheel speeds give smooth proportional turning that discrete `F/L/R/S` codes cannot.
+
+**Pi → ESP32:**
+```
+CMD <left> <right> <flags>\n
+```
+- `left`, `right` — wheel speeds, **-255..255** (negative = reverse, 0 = coast)
+- `flags` — bit 0 = coast stop, bit 1 = hard brake (0 = normal drive)
+
+**ESP32 → Pi (telemetry at 10 Hz):**
+```
+STATUS <vbat> <dl> <dc> <dr> <el> <er> <ax> <ay> <az> <gz>\n
+```
+
+Examples:
+```
+CMD 150 150 0     # straight ahead, ~60% speed
+CMD 150 90 0      # gentle right (right wheels slower)
+CMD 0 0 1         # stop (coast)
+```
+
+A working implementation of this protocol lives in [`vision/rpi/uart.py`](rpi/uart.py) and [`vision/rpi/controller.py`](rpi/controller.py).
+
+---
+
 ## Camera Installation Requirements
 
 **This must be done before any software development. If the camera is in the wrong physical position, gesture detection will not work regardless of how the code is written.**
@@ -169,15 +196,21 @@ Why: A person bending over, turning sideways, or moving their arms changes the b
 DEAD_ZONE = 0.15  # ignore small offsets, prevents jitter
 
 if box_height_ratio > 0.7:
-    command = "CMD:S,0"          # too close, stop
-elif offset > DEAD_ZONE:
-    command = "CMD:R,150"        # person right, turn right
-elif offset < -DEAD_ZONE:
-    command = "CMD:L,150"        # person left, turn left
+    command = "CMD 0 0 1"                              # too close -> coast stop
 else:
-    speed = map_distance_to_speed(box_height_ratio)
-    command = f"CMD:F,{speed}"   # centered, go forward
+    speed = map_distance_to_speed(box_height_ratio)   # 0..255
+    if offset > DEAD_ZONE:                            # person right -> slow right wheels
+        left, right = speed, int(speed * (1 - offset))
+    elif offset < -DEAD_ZONE:                         # person left -> slow left wheels
+        left, right = int(speed * (1 + offset)), speed
+    else:                                             # centered -> straight
+        left, right = speed, speed
+    command = f"CMD {left} {right} 0"
 ```
+
+Steering is **proportional**: the further off-center the person is, the more one
+side slows down, so the robot curves smoothly toward them instead of jerking with
+fixed-rate turns. This is exactly what [`controller.py`](rpi/controller.py) does.
 
 7. Send command over serial to ESP32
 
@@ -252,13 +285,13 @@ if lowered_frames >= THRESHOLD:
 if raised_frames >= THRESHOLD and state != "WAITING":
     state = "WAITING"
     ser.flush()          # flush write buffer before going silent
-    send_serial("CMD:S,0")
+    send_serial("CMD 0 0 1")   # coast stop
 
 if lowered_frames >= THRESHOLD and state != "FOLLOWING":
     state = "FOLLOWING"
 
 if state == "WAITING":
-    send_serial("CMD:S,0")
+    send_serial("CMD 0 0 1")   # coast stop
 else:
     send_serial(follow_command)
 ```
@@ -273,7 +306,7 @@ If no person is in frame:
 
 ```python
 if no detections:
-    send_serial("CMD:S,0")   # stop and wait
+    send_serial("CMD 0 0 1")   # coast stop and wait
 ```
 
 Do not keep sending the last movement command — that causes the robot to drive blind. Stop and wait for the person to re-enter frame.
@@ -327,9 +360,11 @@ def play_clip(name):
 
 Only play a clip when the state actually changes. Playing a clip every frame produces a stutter of overlapping sounds. Gate on transition.
 
-### Eye mood hints over UART
+### Eye mood hints over UART  — ⚠️ PLANNED, not yet in firmware
 
-When the vision state changes, send a `MOOD:` packet to the ESP32 so the eyes match. This rides the existing serial link alongside `CMD:` packets (see firmware README for the ESP32 side).
+> **Status:** The current ESP32 firmware ([`pi_comm.cpp`](../firmware/esp32/src/pi_comm.cpp)) only parses `CMD` lines, and [`display.cpp`](../firmware/esp32/src/display.cpp) shows a **telemetry readout** (battery/distances/encoders), not animated eyes. The `MOOD:` protocol and OLED-eyes below are a **design target**, not implemented yet — don't rely on them for integration until the firmware side lands. See [firmware README → Companion Display](../firmware/README.md).
+
+When the vision state changes, the plan is to send a `MOOD:` packet to the ESP32 so the eyes match. It rides the existing serial link alongside `CMD` lines.
 
 ```python
 def send_mood(mood):       # mood in {"FOUND", "LOST", "WAIT"}
@@ -349,15 +384,29 @@ send_mood("WAIT")
 
 ## File Structure
 
+Current files (implemented):
 ```
 vision/rpi/
-+-- requirements.txt         # ultralytics, opencv-python, pyserial, picamera2
-+-- follow.py                # main script -- camera, inference, serial output
-+-- gesture.py               # hand raise detection, state machine
-+-- audio.py                 # sound clip playback (aplay), mood hint sender
-+-- utils.py                 # offset calculation, distance mapping, serial helpers
-+-- sounds/                  # found.wav, searching.wav, waiting.wav, etc.
++-- main.py              # main loop -- camera, inference, following, gesture, ASL
++-- tracker.py          # YOLOv8 pose + object detection wrapper
++-- controller.py       # bbox -> CMD <left> <right> <flags> + gesture state machine
++-- uart.py             # serial link to ESP32 (CMD out, STATUS in)
++-- asl_features.py     # canonical scale-invariant hand features (train + infer)
++-- asl_from_dataset.py # train ASL model from the Kaggle ASL Alphabet dataset
++-- asl_collect.py      # alt: collect your own ASL samples from webcam
++-- asl_run.py          # standalone ASL tester
 ```
+
+Planned (companion features, not yet implemented):
+```
++-- audio.py            # sound-clip playback (aplay) on state transitions
++-- sounds/             # found.wav, searching.wav, waiting.wav, etc.
+```
+
+> Note: the gesture state machine and following/distance smoothing described
+> above are documented as standalone snippets here; in the current code they live
+> inside `controller.py` and `main.py`. The EMA offset and rolling-height smoothing
+> are good upgrades not yet folded into `controller.py` — see the issue tracker.
 
 ---
 

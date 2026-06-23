@@ -281,10 +281,10 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 Before trusting any demo, run these tests in order. If the robot passes all four, the power system is solid.
 
 **Test 1 — Full throttle forward for 30 seconds**
-Command CMD:F,255. Measure battery voltage at start and end. Should not sag more than 0.3V. Feel the TB6612FNG ICs and the D24V50F5 module — should be warm but not hot. If either TB6612FNG is too hot to touch, increase copper pour area under it.
+Command `CMD 255 255 0`. Measure battery voltage at start and end. Should not sag more than 0.3V. Feel the TB6612FNG ICs and the D24V50F5 module — should be warm but not hot. If either TB6612FNG is too hot to touch, increase copper pour area under it.
 
 **Test 2 — Repeated hard reversal**
-Alternate CMD:F,255 and CMD:B,255 every 2 seconds, 20 times. Watch for ESP32 resets or Pi undervoltage icon. None should occur. This is the worst case for back-EMF transients and TB6612FNG thermal stress.
+Alternate `CMD 255 255 0` and `CMD -255 -255 0` every 2 seconds, 20 times. Watch for ESP32 resets or Pi undervoltage icon. None should occur. This is the worst case for back-EMF transients and TB6612FNG thermal stress.
 
 **Test 3 — Stall one wheel**
 Block one wheel by hand for 3 seconds. Robot should not reset. Polyfuse should not trip (single motor stall is ~1.8A, well under 5A). Release and confirm motors spin up correctly.
@@ -318,7 +318,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ### 6. Motor Wiring Polarity Error
 **Cause:** Motor connector plugged backward. One side drives in reverse. Robot spins in circles.
-**Mitigation:** Polarity marked on PCB silkscreen. Test each motor independently with CMD:F,100 before full assembly. Fix by swapping motor cable wires, not in firmware.
+**Mitigation:** Polarity marked on PCB silkscreen. Test each motor independently with `CMD 100 100 0` before full assembly. Fix by swapping motor cable wires, not in firmware.
 
 ### 7. I2C Bus Lockup
 **Cause:** MPU-6050 holds SDA low after interrupted transaction. Bus frozen.
@@ -326,7 +326,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ### 8. UART Garbage on Pi Boot
 **Cause:** Pi kernel uses GPIO14 (UART TX) for boot messages. Arrives at ESP32 as garbage bytes.
-**Mitigation:** Firmware discards any packet without valid CMD: prefix. Also: disable serial console in raspi-config on Pi setup (required step, see vision README).
+**Mitigation:** Firmware discards any line that does not start with the `CMD` prefix. Also: disable serial console in raspi-config on Pi setup (required step, see vision README).
 
 ### 9. PWM Noise on Encoder/Sensor Lines
 **Cause:** 20kHz PWM couples capacitively into parallel sensor wires. Adds noise to encoder counts and HC-SR04 echo timing.

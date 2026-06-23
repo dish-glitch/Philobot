@@ -68,7 +68,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 |      Serial command -> UART TX                   |
 +---------------+----------------------------------+
                 |  115200 baud UART
-                |  Format: CMD:<F/B/L/R/S>,<0-255>
+                |  Format: CMD <left> <right> <flags>  (-255..255)
                 v
 +--------------------------------------------------+
 |              ESP32-WROOM-32                      |

@@ -28,27 +28,28 @@ Built with PlatformIO. Framework: Arduino (simpler than ESP-IDF for this use cas
 
 ## Serial Protocol (UART — Raspberry Pi to ESP32)
 
-**Baud rate:** 115200  
-**Format:** `CMD:<direction>,<speed>\n`
+**Baud rate:** 115200
+**Format:** `CMD <left> <right> <flags>\n` — **numeric differential drive** (as implemented in [`src/pi_comm.cpp`](src/pi_comm.cpp))
 
-| Direction Code | Meaning |
-|---|---|
-| `F` | Forward |
-| `B` | Backward |
-| `L` | Turn left |
-| `R` | Turn right |
-| `S` | Stop |
+| Field | Range | Meaning |
+|---|---|---|
+| `left` | -255..255 | left-side wheel speed (negative = reverse, 0 = coast) |
+| `right` | -255..255 | right-side wheel speed |
+| `flags` | bitfield | bit 0 = coast stop, bit 1 = hard brake, 0 = normal drive |
 
-**Speed:** 0-255 (maps to PWM duty cycle, 0 = stopped, 255 = full speed)
+Independent left/right speeds let the Pi steer **proportionally** (curve smoothly toward the person) instead of issuing discrete F/B/L/R/S turns. `motor_set(left, right)` in [`src/motors.h`](src/motors.h) drives the two sides directly.
 
 **Examples:**
 ```
-CMD:F,180\n    -> drive forward at ~70% speed
-CMD:L,120\n    -> turn left at ~47% speed
-CMD:S,0\n      -> stop
+CMD 180 180 0\n   -> straight ahead at ~70% speed
+CMD 180 110 0\n   -> curve right (right wheels slower)
+CMD 0 0 1\n       -> stop (coast)
+CMD 0 0 2\n       -> stop (hard brake)
 ```
 
-The ESP32 parses each line as it arrives. If a line is malformed or the watchdog timer expires (no command for 500ms), motors stop immediately.
+The ESP32 parses each line as it arrives. If a line is malformed or (once implemented) the watchdog timer expires (no command for 500ms), motors stop immediately.
+
+> **Historical note:** earlier drafts of this doc used a `CMD:<direction>,<speed>` format (`CMD:F,180`). That was replaced by the numeric differential-drive format above, which is what the firmware and the Pi-side code actually implement.
 
 ---
 
@@ -170,7 +171,7 @@ The escape sequence is a fixed-time maneuver — it does not check sensors durin
 
 ## Gesture Control Response
 
-The gesture detection runs entirely on the Raspberry Pi (see vision README). The ESP32 does not know what a gesture is. When the Pi detects a raised hand, it sends `CMD:S,0\n` (stop). When the hand is lowered, it resumes sending directional commands.
+The gesture detection runs entirely on the Raspberry Pi (see vision README). The ESP32 does not know what a gesture is. When the Pi detects a raised hand, it sends `CMD 0 0 1\n` (coast stop). When the hand is lowered, it resumes sending normal drive commands.
 
 The ESP32 just follows orders. The watchdog timer is important here — if the Pi is in WAITING state and sends nothing, the ESP32 must not keep driving from the last command. Set watchdog to 500ms: if no command arrives within 500ms, stop motors.
 
@@ -196,7 +197,7 @@ void setup() {
 }
 ```
 
-Without this, the robot may execute stale commands (e.g., CMD:F,255 from before the crash) immediately on recovery.
+Without this, the robot may execute stale commands (e.g., `CMD 255 255 0` from before the crash) immediately on recovery.
 
 **I2C bus recovery:** Run a 9-clock SCL recovery routine at firmware init before starting the main loop. This clears any stuck-SDA-low condition left over from a hard reset or Pi reboot mid-transaction:
 
@@ -214,9 +215,11 @@ void i2c_bus_recovery() {
 
 ---
 
-## Companion Display — OLED Eyes
+## Companion Display — OLED Eyes  — ⚠️ PLANNED
 
-Philo is a companion robot, so it has a face: two SSD1306 OLED displays (128x64, I2C) acting as animated eyes. The ESP32 drives them because it is already the I2C master and it knows the robot's real-time state (moving, stopped, obstacle, tilt, low battery).
+> **Status:** Not implemented yet. The current [`display.cpp`](src/display.cpp) drives **one** SSD1306 as a **telemetry readout** (`display_status()` shows battery, ultrasonic distances, encoder counts). The animated dual-eye / mood system below — including the `MOOD:` UART extension — is the design target. Build it on top of the current display module; until then the Pi should not depend on `MOOD:` packets being understood.
+
+Philo is a companion robot, so the goal is to give it a face: two SSD1306 OLED displays (128x64, I2C) acting as animated eyes. The ESP32 drives them because it is already the I2C master and it knows the robot's real-time state (moving, stopped, obstacle, tilt, low battery).
 
 **Hardware:** Two OLEDs on the existing I2C bus, at addresses 0x3C and 0x3D (set by the address-select jumper/resistor on each module). The MPU-6050 is already on this bus at 0x68, so the bus now carries three devices. The existing 4.7k pull-ups are adequate for three devices on a short bus.
 
@@ -263,7 +266,7 @@ The ESP32 derives most expressions from its own state. The Pi sends optional hin
 
 ### MOOD protocol extension
 
-The Pi can send mood hints over the existing UART link using a second command prefix, parsed alongside CMD:
+When implemented, the Pi will send mood hints over the existing UART link using a second command prefix, parsed alongside `CMD`:
 
 ```
 MOOD:FOUND\n     -> set current_mood = HAPPY
@@ -285,7 +288,7 @@ firmware/esp32/
 |   +-- motor.cpp / .h      # PWM, PID, encoder ISR
 |   +-- ultrasonic.cpp / .h # HC-SR04 sequential polling and priority logic
 |   +-- imu.cpp / .h        # MPU-6050 I2C read, tilt check
-|   +-- serial_cmd.cpp / .h # UART parse (CMD: and MOOD:), watchdog timer
+|   +-- pi_comm.cpp / .h   # UART parse (CMD numeric), STATUS send; MOOD parse planned
 |   +-- display.cpp / .h    # OLED eyes, core-1 FreeRTOS task, mood rendering
 +-- test/                   # unit tests if needed
 ```
@@ -328,7 +331,7 @@ firmware/esp32/
 | Week | Target |
 |---|---|
 | 4-5 | PCB arrives — write basic motor spin, confirm over serial terminal |
-| 5 | UART command parsing working, robot responds to F/B/L/R/S |
+| 5 | UART command parsing working, robot responds to `CMD <left> <right> <flags>` |
 | 6 | Encoders reading, PID loop running, robot drives straight |
 | 6-7 | Ultrasonic obstacle avoidance working (sequential firing confirmed) |
 | 7 | IMU tilt detection, watchdog, full integration with Pi |
