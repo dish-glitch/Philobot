@@ -227,6 +227,32 @@ Philo/
 
 ---
 
+## AI Tools Used
+
+This project was built with significant help from AI tools. We're disclosing this openly because we think that's the right thing to do, and because we think using AI as a learning tool — especially when you don't have access to mentors, teachers, or a robotics program — is legitimate and worth being honest about.
+
+**Claude (Anthropic) — used throughout the entire project**
+
+- Schematic review and GPIO assignment verification from the KiCad netlist
+- Writing and debugging all ESP32 firmware modules (motors, encoders, ultrasonic, IMU, OLED, Pi UART protocol)
+- Debugging PlatformIO build errors — including tracking down the `pins_arduino.h` issue caused by a framework version conflict between espressif32@6.9.0 and 7.0.1
+- Designing the UART text protocol between the Pi and ESP32
+- Setting up the GitHub repository structure, writing documentation, and drafting the README
+- Chassis design guidance for Fusion 360 (dimensions, boss geometry for angled ultrasonic mounts)
+- Writing GitHub Issues for known bugs with root cause analysis and proposed fixes
+- Answering questions about why specific hardware choices were made (TB6612FNG vs L298N, YOLOv8n-pose vs separate models, UART vs I2C, etc.)
+
+**What AI did not do:**
+
+- Make hardware decisions — component selection, PCB layout, and schematic design were done by the team in KiCad
+- Write the vision stack — the YOLOv8 inference pipeline and ASL classifier were written and tested by the team
+- Test anything physically — all hardware testing, debugging, and iteration was done by us
+- Design the chassis geometry — Fusion 360 modeling was done by the team using Claude's dimension guidance as a reference
+
+We started this project with no robotics background, no school program, and no mentor. AI filled the role that a textbook or experienced teammate would have filled if we had access to one.
+
+---
+
 ## License
 
 MIT — use, modify, share freely. See [LICENSE](LICENSE).
