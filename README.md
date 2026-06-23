@@ -250,6 +250,7 @@ We used Claude (Anthropic) as a reference tool during this project and are discl
 
 ---
 
+we are happy to answer questions! We have used AI to help build this project BUT we understand everything we built, If AI did help create any line of code or help pick out parts that seem better, we do reserch to understand the part/code and function it has. 
 ## License
 
 MIT — use, modify, share freely. See [LICENSE](LICENSE).
