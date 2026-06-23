@@ -248,9 +248,10 @@ We used Claude (Anthropic) as a reference tool during this project and are discl
 - The chassis design in Fusion 360 — built by our mechanical lead from scratch
 - Every journal entry — written by the team in our own words
 
+We are happy to answer questions about any part of this project. We have used AI to help build it, but we understand everything we built. If AI helped create any line of code or suggested a part that seemed better, we did the research to understand what that part or code does and why — before it went into the project.
+
 ---
 
-we are happy to answer questions! We have used AI to help build this project BUT we understand everything we built, If AI did help create any line of code or help pick out parts that seem better, we do reserch to understand the part/code and function it has. 
 ## License
 
 MIT — use, modify, share freely. See [LICENSE](LICENSE).
