@@ -229,7 +229,7 @@ Philo/
 
 ## AI Tools Used
 
-We used Claude (Anthropic) as a reference tool during this project and are disclosing it openly. We had no robotics program, no teacher, and no mentor — AI filled the role a textbook or more experienced teammate would have filled if we'd had access to one.
+We used Claude (Anthropic) as a reference tool during this project and are disclosing it openly. We had no robotics program, no teacher, and no mentor. AI filled the role a textbook or more experienced teammate would have filled if we'd had access to one.
 
 **Where Claude helped:**
 
@@ -237,7 +237,7 @@ We used Claude (Anthropic) as a reference tool during this project and are discl
 - Drafting initial ESP32 firmware modules as a starting point — the team then read through, modified, tested, and debugged everything on actual hardware
 - Diagnosing a PlatformIO build failure (`pins_arduino.h` not found) caused by a version conflict between espressif32@6.9.0 and 7.0.1
 - Explaining why specific hardware choices make sense (TB6612FNG vs L298N, YOLOv8n-pose vs separate models, UART vs I2C) so we could make informed decisions
-- Helping structure the GitHub repository and draft documentation
+- Helping structure the GitHub repository and draft documentation to a presentable structure. 
 - Providing weight and dimension constraints for the chassis — specifically, what size the enclosure needs to be so the motors can actually move it. The chassis itself is fully designed by the team in Fusion 360
 
 **What the team built and owns:**
