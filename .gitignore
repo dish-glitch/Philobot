@@ -19,6 +19,13 @@ hardware/kicad/borh/
 *.pt
 *.onnx
 *.tflite
+*.task          # MediaPipe hand_landmarker (auto-downloaded on first run)
+*.pkl           # trained ASL classifier (regenerate via asl_from_dataset.py)
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+asl_data.csv    # generated training data dump
 
 # ── PlatformIO build output ───────────────────────────────────────────────────
 .pio/
