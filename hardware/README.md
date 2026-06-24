@@ -252,13 +252,13 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 | Misc (LEDs, pull-ups) | 3.3V | 20mA | same | Estimated |
 | **Total normal operation** | | ~4.8A | | |
 | **Motor reversal transient** | | | ~4.4A for <50ms | Absorbed by 470uF caps |
-| **All motors stalled** | | ~8.8A sustained | | Polyfuse trips at 5A |
+| **All motors stalled** | | ~8.8A sustained | | Above 7A hold — polyfuse trips slowly; firmware watchdog (500ms) is primary stall protection |
 
 **Note on speaker peak:** the ~600mA speaker peak is brief (during a sound clip) and stacks on the 5V rail. With the 5A D24V50F5, total worst case (~2.77A + 0.6A = ~3.4A) sits comfortably under 5A — the speaker no longer threatens the rail. (This was a real concern on the old 3A part; the 5A upgrade resolves it.)
 
 **Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At ~35W normal draw: ~27 minutes. Sufficient for demo. If runtime is marginal, upgrade to 3000mAh LiPo (same voltage, same connectors, adds ~35g).
 
-**Why the polyfuse trips at all-motors-stall:** 4x JGA25-370 at 7.4V stall current ~1.5-2.2A each = 6-8.8A total. Polyfuse rated 5A trips within 1-2 seconds at 8A. This is the correct protective behavior.
+**Polyfuse behavior at all-motors-stall:** 4x JGA25-370 at 7.4V stall current ~1.5-2.2A each = 6-8.8A total. The RGEF700 (7A hold, ~14A trip current) at 8.8A is only 1.26× hold — it will trip but slowly (minutes, not seconds). This is intentional: the 7A part was chosen over 5A specifically to avoid pre-trip resistance sag at normal 3A load. At stall, the firmware 500ms watchdog stops the motors long before the polyfuse acts. The polyfuse is the last-resort backstop for a firmware crash, not the primary stall protection.
 
 **Motor reversal transient:** During reversal, motor acts as generator. Two motors reversing simultaneously gives ~4.4A transient for <50ms. Two 470uF caps at TB6612FNG VM pins (one per IC) absorb this: 0.47 coulombs capacity, transient requires 0.22 coulombs. Handled without sag.
 
@@ -287,7 +287,7 @@ Command `CMD 255 255 0`. Measure battery voltage at start and end. Should not sa
 Alternate `CMD 255 255 0` and `CMD -255 -255 0` every 2 seconds, 20 times. Watch for ESP32 resets or Pi undervoltage icon. None should occur. This is the worst case for back-EMF transients and TB6612FNG thermal stress.
 
 **Test 3 — Stall one wheel**
-Block one wheel by hand for 3 seconds. Robot should not reset. Polyfuse should not trip (single motor stall is ~1.8A, well under 5A). Release and confirm motors spin up correctly.
+Block one wheel by hand for 3 seconds. Robot should not reset. Polyfuse should not trip (single motor stall is ~1.8A, well under 7A hold current). Release and confirm motors spin up correctly.
 
 **Test 4 — Full system under inference**
 Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd measure_temp). Target under 70C with heatsink. If throttling occurs (check with vcgencmd get_throttled), add a 30mm fan.
@@ -298,7 +298,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ### 1. Motor Burn from Sustained Stall
 **Cause:** Wheel jammed, motor at stall current (~1.5-2.2A at 7.4V) indefinitely.
-**Mitigation:** 5A polyfuse trips on 3+ motor stall. Watchdog stops motors within 500ms of lost Pi comms. Obstacle escape sequence prevents sustained stall in normal operation.
+**Mitigation:** Firmware watchdog stops motors within 500ms of lost Pi comms — this is the primary stall protection. 7A polyfuse (RGEF700) is the last-resort backup for a firmware crash; at 8.8A all-stall it will eventually trip. Obstacle escape sequence prevents sustained stall in normal operation.
 
 ### 2. RPi Brownout from 5V Sag
 **Cause:** Pi current spike faster than buck converter response.
