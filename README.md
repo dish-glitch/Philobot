@@ -113,7 +113,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | ESP32-WROOM-32 | Main MCU | 1 | ~$5 | Amazon |
 | TB6612FNG Dual H-Bridge | Motor driver (2 motors each) | 2 | ~$2 ea | [Adafruit](https://www.adafruit.com/product/2448) |
 | MPU-6050 IMU | Tilt detection, auto-stop on tip-over | 1 | ~$2 | Amazon |
-| N20 Gear Motors w/ Encoders (12V 200RPM) | Drive wheels | 4 | ~$4 ea | AliExpress |
+| JGA25-370 Gear Motors w/ Encoders (6V 200RPM) | Drive wheels | 4 | ~$8 ea | AliExpress |
 | 65mm Rubber Wheels | Traction | 4 | ~$2 ea | AliExpress |
 | HC-SR04 Ultrasonic Sensors | Obstacle detection | 3 | ~$1 ea | Amazon |
 | 2S LiPo 2200mAh | Main battery | 1 | ~$14 | Amazon / HobbyKing |
@@ -121,7 +121,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | Raspberry Pi 4 (2GB+) | Vision compute | 1 | ~$45 | [Adafruit](https://www.adafruit.com) |
 | Raspberry Pi Camera Module v2 | 8MP, 120 degree FOV | 1 | ~$25 | Amazon |
 | AMS1117-3.3 LDO | 3.3V rail for ESP32 logic | 1 | ~$1 | DigiKey |
-| MP2307 Buck Converter | 5V rail for Raspberry Pi | 1 | ~$2 | DigiKey |
+| Pololu D24V50F5 Buck (5V 5A) | 5V rail for Raspberry Pi | 1 | ~$15 | Pololu |
 | SMD Resistors 0603 assortment | Pull-ups, current limiting | — | ~$9 | Amazon |
 | SMD Capacitors 0603/0805 assortment | Decoupling | — | ~$10 | Amazon |
 | XT30 Connector Pair | Battery connector | 1 | ~$2 | Amazon |
@@ -130,7 +130,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | Custom PCB — JLCPCB (5 boards) | From Gerbers | 1 run | ~$25 | [JLCPCB](https://jlcpcb.com) |
 | PETG-CF Filament | Chassis | — | $0 | On hand |
 | M2.5 / M3 Standoffs + Screws | Mounting hardware | — | ~$8 | Amazon |
-| **Total** | | | **~$150** | |
+| **Total** | | | **~$180** | |
 
 ---
 
