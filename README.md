@@ -221,9 +221,9 @@ Philo/
 | Person | Role |
 |---|---|
 | [@dish-glitch](https://github.com/dish-glitch) | PCB design (KiCad) + ESP32 firmware |
-| [@sivathamizhan](https://github.com/sivathamizhan) | Raspberry Pi vision stack — YOLOv8, gesture detection, serial comms |
+| [@sivathamizhan](https://github.com/sivathamizhan) & [@dish-glitch](https://github.com/dish-glitch) | Raspberry Pi vision stack — YOLOv8, gesture detection, serial comms |
 | [@hummos430](https://github.com/hummos430) | Chassis design in Fusion 360 + 3D printing in PETG-CF |
-| Friend 4 | Mechanical assembly + integration testing |
+| [@dish-glitch](https://github.com/dish-glitch), [@hummos430](https://github.com/hummos430), [@sivathamizhan](https://github.com/sivathamizhan) | Mechanical assembly + integration testing |
 
 ---
 
