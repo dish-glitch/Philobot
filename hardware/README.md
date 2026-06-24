@@ -242,7 +242,7 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 | Component | Voltage Rail | Typical Current | Peak (transient) | Source |
 |---|---|---|---|---|
 | Raspberry Pi 4 (inference load) | 5V | 2.5A | 3.0A | Official Pi 4 power spec |
-| 4x JGA25-370 motors (running load at 40% torque) | VBAT | 2.0A total | 8.8A (all motors stall at 7.4V — polyfuse trips) | Motor spec + stall analysis |
+| 4x JGA25-370 motors (running load at 40% torque) | VBAT | 2.0A total | 8.8A (all motors stall at 7.4V — above 7A polyfuse hold, firmware watchdog stops motors first) | Motor spec + stall analysis |
 | 4x JGA25-370 motor reversal transient | VBAT | — | ~4.4A for <50ms | Back-EMF analysis (2 motors reverse at once) |
 | ESP32 (active, WiFi off) | 3.3V | 240mA | 340mA | Espressif datasheet |
 | 3x HC-SR04 | 5V | 45mA | same | HC-SR04 datasheet |

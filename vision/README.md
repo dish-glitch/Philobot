@@ -298,6 +298,8 @@ else:
 
 **Why gesture detection requires the elevated camera:** Gesture is detected by comparing wrist Y-coordinate to shoulder Y-coordinate in the image. If the camera only sees legs (low mount, no tilt), neither wrist nor shoulder keypoints are in frame and all confidence scores are 0. The gesture check will never trigger. The camera mast is not optional.
 
+> **Known issue:** The current one-hand trigger (either wrist above shoulder) is too sensitive — reaching for something or a natural arm swing can stop the robot. Tracked in [issue #2](https://github.com/dish-glitch/Philobot/issues/2). Proposed fix: require both wrists above both shoulders simultaneously, and extend the debounce window to 1.5 seconds.
+
 ---
 
 ## What Happens When No Person Is Detected

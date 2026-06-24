@@ -285,7 +285,7 @@ firmware/esp32/
 +-- platformio.ini          # board = esp32dev, framework = arduino
 +-- src/
 |   +-- main.cpp            # setup() and loop()
-|   +-- motor.cpp / .h      # PWM, PID, encoder ISR
+|   +-- motors.cpp / .h     # PWM, PID, encoder ISR
 |   +-- ultrasonic.cpp / .h # HC-SR04 sequential polling and priority logic
 |   +-- imu.cpp / .h        # MPU-6050 I2C read, tilt check
 |   +-- pi_comm.cpp / .h   # UART parse (CMD numeric), STATUS send; MOOD parse planned
@@ -320,7 +320,7 @@ firmware/esp32/
 | Battery ADC | GPIO 36 | Input-only, 10k/3.3k divider |
 | Status LED | GPIO 2 | 100 ohm series resistor |
 
-*Note: finalize pin assignments in KiCad before writing firmware. Changing pins after PCB is ordered means hardware rework.*
+*Pin assignments are final — verified from KiCad netlist. Do not change without updating both the schematic and this table.*
 
 *Previous revision had a conflict: GPIO 21 was assigned to both ultrasonic front-left echo AND I2C SDA, and GPIO 22 was assigned to both front-right trigger AND I2C SCL. This table resolves both conflicts. Ultrasonic echo uses GPIO 4/18/23; ultrasonic triggers use GPIO 5/13/19; I2C uses GPIO 21/22 as intended.*
 
@@ -328,11 +328,14 @@ firmware/esp32/
 
 ## Timeline
 
-| Week | Target |
+| Status | Milestone |
 |---|---|
-| 4-5 | PCB arrives — write basic motor spin, confirm over serial terminal |
-| 5 | UART command parsing working, robot responds to `CMD <left> <right> <flags>` |
-| 6 | Encoders reading, PID loop running, robot drives straight |
-| 6-7 | Ultrasonic obstacle avoidance working (sequential firing confirmed) |
-| 7 | IMU tilt detection, watchdog, full integration with Pi |
-| 8 | Tuning PID, edge cases handled |
+| **DONE** | All firmware modules compile — motors, encoders, ultrasonic, IMU, OLED, Pi UART |
+| **DONE** | UART command parsing — robot responds to `CMD <left> <right> <flags>` |
+| **DONE** | Gesture stop tested on Arduino stand-in |
+| **DONE** | ASL letter display over UART tested on Arduino stand-in |
+| Next | PCB arrives — verify all modules on real ESP32 hardware |
+| Next | Encoders reading, PID loop running, robot drives straight |
+| Next | Ultrasonic obstacle avoidance working (sequential firing confirmed) |
+| Next | IMU tilt detection, full integration with Pi |
+| Next | PID tuning, edge cases, demo readiness |

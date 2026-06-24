@@ -46,7 +46,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 
 **Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
 
-**Sign language recognition:** The camera also detects ASL hand signs in real time. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Currently works for a subset of letters — model training is ongoing to expand coverage to the full alphabet. (DISCLAMER. This function is VERY limited we are trying to work on it to get better results, this is just an attempt to try something new. )
+**Sign language recognition:** The camera also detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Currently works for a subset of letters — confidence sits around 50% for some signs and model training is ongoing to expand coverage and improve reliability. *Note: this feature is experimental. We know it is limited and are actively working to improve it.*
 
 **Obstacle avoidance:** Three HC-SR04 ultrasonic sensors (front-left at -30 degrees, front-center, front-right at +30 degrees) feed into a priority layer in ESP32 firmware. The Pi handles direction. The ESP32 handles not hitting things. These are separate concerns and intentionally kept that way.
 
@@ -114,7 +114,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | TB6612FNG Dual H-Bridge | Motor driver (2 motors each) | 2 | ~$2 ea | [Adafruit](https://www.adafruit.com/product/2448) |
 | MPU-6050 IMU | Tilt detection, auto-stop on tip-over | 1 | ~$2 | Amazon |
 | JGA25-370 Gear Motors w/ Encoders (6V 200RPM) | Drive wheels | 4 | ~$8 ea | AliExpress |
-| 65mm Rubber Wheels | Traction | 4 | ~$2 ea | AliExpress |
+| 80mm Rubber Wheels | Traction | 4 | ~$3 ea | AliExpress |
 | HC-SR04 Ultrasonic Sensors | Obstacle detection | 3 | ~$1 ea | Amazon |
 | 2S LiPo 2200mAh | Main battery | 1 | ~$14 | Amazon / HobbyKing |
 | 2S LiPo Balance Charger | Charging | 1 | ~$10 | Amazon |
@@ -204,14 +204,16 @@ Philo/
 - [x] KiCad schematic — complete, ERC clean
 - [x] PCB layout — complete, DRC clean, Gerbers exported
 - [x] ESP32 firmware skeleton — all modules compile (motors, encoders, ultrasonic, IMU, OLED, Pi UART)
+- [x] Pi vision stack — YOLOv8 person following + gesture + ASL running on laptop/Arduino
+- [x] Gesture stop — confirmed working in bench testing (Arduino stand-in)
+- [x] ASL sign recognition — working for subset of letters; training ongoing (see issues #1 #3 #4)
+- [ ] Gesture sensitivity tuning — currently too sensitive, fix tracked in issue #2
 - [ ] PCB fabrication (JLCPCB)
-- [ ] Chassis design (Fusion 360)
+- [ ] Chassis design (Fusion 360) — in progress
 - [ ] Chassis printed
-- [ ] PID speed loop
+- [ ] PID speed loop (ESP32)
 - [ ] Ultrasonic obstacle avoidance tuning
-- [ ] YOLOv8 person detection live on RPi
-- [ ] Gesture control (hand raise stops, lower resumes)
-- [ ] Full system integration
+- [ ] Full system integration on robot hardware
 - [ ] Demo video
 
 ---
