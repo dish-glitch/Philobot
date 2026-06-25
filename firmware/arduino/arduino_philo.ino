@@ -1,111 +1,140 @@
-// Philo bench receiver — Arduino Uno as ESP32 stand-in.
-// Listens to the laptop vision stack over USB serial and reacts:
-//   CMD <left> <right> <flags>  -> follow LED on when moving, off when stopped
-//                                  turn LEDs show left/right steering
-//                                  OLED shows state + direction
-//   ASL <LETTER>                -> OLED flashes the big letter for 2s
+// Philo bench receiver + obstacle safety layer — Arduino Uno as ESP32 stand-in.
+//
+// Receives from laptop vision stack:
+//   CMD <left> <right> <flags>   -> drive state (follow LED + turn LEDs + OLED)
+//   ASL <LETTER>                 -> OLED flashes the big letter for 2s
+//
+// Reads its OWN ultrasonic and OVERRIDES the command for safety (like the ESP32):
+//   - obstacle closer than OBSTACLE_CM  -> force STOP, even while camera says follow
+//
+// Reports back to laptop at 10Hz:
+//   STATUS <vbat> <dl> <dc> <dr> <el> <er> <ax> <ay> <az> <gz>
 //
 // Wiring:
-//   OLED  SDA->A4 SCL->A5  VCC->5V GND->GND  (0x3C)
-//   Follow LED : long leg->220ohm->D6,  short->GND   (D13 built-in mirrors it)
-//   LEFT  LED  : long leg->220ohm->D7,  short->GND   (lights when turning left)
-//   RIGHT LED  : long leg->220ohm->D8,  short->GND   (lights when turning right)
+//   OLED on I2C  SDA->A4 SCL->A5  (0x3C)
+//   HC-SR04  TRIG->D2  ECHO->D3
+//   Follow LED D6, LEFT LED D7, RIGHT LED D8   (each long leg->220ohm->pin)
+//
+// (MPU-6050 tip-over override removed for now — add back once the I2C bus is
+//  rock-solid; it can hang the loop if the MPU connection is flaky.)
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-Adafruit_SSD1306 oled(128, 64, &Wire, -1);
-
+#define TRIG 2
+#define ECHO 3
 #define LED_FOLLOW 6
 #define LED_LEFT   7
 #define LED_RIGHT  8
-#define LED_BUILTIN_PIN 13
-#define ASL_HOLD_MS 2000   // keep an ASL letter on screen this long
-#define TURN_MARGIN 15     // L/R speed gap before we call it a turn
 
+#define OBSTACLE_CM 20
+#define TURN_MARGIN 15
+#define ASL_HOLD_MS 2000
+#define STATUS_MS   100     // 10 Hz
+
+Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+
+int  cmdLeft = 0, cmdRight = 0;
+bool cmdStopped = true;
 unsigned long asl_until = 0;
+unsigned long last_status = 0;
 
-void showDrive(int left, int right, bool stopped, const char* dir) {
+long readDistance() {
+  digitalWrite(TRIG, LOW);  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH); delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+  long dur = pulseIn(ECHO, HIGH, 25000UL);
+  if (dur == 0) return -1;
+  return dur / 58;
+}
+
+void drawState(const char* state, int dist, const char* dir) {
   oled.clearDisplay();
   oled.setTextColor(SSD1306_WHITE);
   oled.setTextSize(1);
-  oled.setCursor(0, 0);
-  oled.print("PHILO");
+  oled.setCursor(0, 0);  oled.print("PHILO");
   oled.drawLine(0, 10, 127, 10, SSD1306_WHITE);
   oled.setTextSize(2);
-  oled.setCursor(0, 18);
-  oled.print(stopped ? "STOPPED" : "FOLLOW");
-  if (!stopped) {
-    oled.setTextSize(1);
-    oled.setCursor(0, 38);
-    oled.print("Dir: "); oled.print(dir);
-  }
+  oled.setCursor(0, 16);  oled.print(state);
   oled.setTextSize(1);
-  oled.setCursor(0, 52);
-  oled.print("L:"); oled.print(left);
-  oled.print("  R:"); oled.print(right);
+  oled.setCursor(0, 40);  oled.print("Dir: "); oled.print(dir);
+  oled.setCursor(0, 52);  oled.print("Dist: ");
+  if (dist < 0) oled.print("--"); else oled.print(dist);
+  oled.print("cm");
   oled.display();
 }
 
-void showASL(String letter) {
+void drawASL(String letter) {
   oled.clearDisplay();
   oled.setTextColor(SSD1306_WHITE);
   oled.setTextSize(1);
-  oled.setCursor(0, 0);
-  oled.print("Sign detected:");
+  oled.setCursor(0, 0);  oled.print("Sign detected:");
   oled.setTextSize(5);
-  oled.setCursor(46, 22);
-  oled.print(letter);
+  oled.setCursor(46, 22); oled.print(letter);
   oled.display();
 }
 
 void setup() {
   Serial.begin(115200);
+  pinMode(TRIG, OUTPUT); pinMode(ECHO, INPUT);
   pinMode(LED_FOLLOW, OUTPUT);
   pinMode(LED_LEFT, OUTPUT);
   pinMode(LED_RIGHT, OUTPUT);
-  pinMode(LED_BUILTIN_PIN, OUTPUT);
 
   Wire.begin();
   oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+
   oled.clearDisplay();
   oled.setTextColor(SSD1306_WHITE);
   oled.setTextSize(2);
-  oled.setCursor(10, 24);
-  oled.print("Philo Ready");
+  oled.setCursor(10, 24); oled.print("Philo Ready");
   oled.display();
 }
 
 void loop() {
-  if (Serial.available()) {
+  // 1. handle pending serial lines
+  while (Serial.available()) {
     String line = Serial.readStringUntil('\n');
     line.trim();
-
     if (line.startsWith("CMD")) {
-      int left = 0, right = 0, flags = 0;
-      sscanf(line.c_str(), "CMD %d %d %d", &left, &right, &flags);
-      bool stopped = (left == 0 && right == 0);
-
-      // follow LED
-      digitalWrite(LED_FOLLOW, stopped ? LOW : HIGH);
-      digitalWrite(LED_BUILTIN_PIN, stopped ? LOW : HIGH);
-
-      // turn indicators:  left>right = turning right,  right>left = turning left
-      int diff = left - right;
-      bool turnRight = (!stopped && diff >  TURN_MARGIN);
-      bool turnLeft  = (!stopped && diff < -TURN_MARGIN);
-      digitalWrite(LED_RIGHT, turnRight ? HIGH : LOW);
-      digitalWrite(LED_LEFT,  turnLeft  ? HIGH : LOW);
-
-      const char* dir = stopped ? "-" : (turnLeft ? "LEFT" : (turnRight ? "RIGHT" : "STRAIGHT"));
-      if (millis() > asl_until) showDrive(left, right, stopped, dir);
-    }
-    else if (line.startsWith("ASL")) {
-      String letter = line.substring(4);
-      letter.trim();
-      showASL(letter);
+      int l = 0, r = 0, f = 0;
+      sscanf(line.c_str(), "CMD %d %d %d", &l, &r, &f);
+      cmdLeft = l; cmdRight = r;
+      cmdStopped = (l == 0 && r == 0);
+    } else if (line.startsWith("ASL")) {
+      String letter = line.substring(4); letter.trim();
+      drawASL(letter);
       asl_until = millis() + ASL_HOLD_MS;
     }
+  }
+
+  // 2. ultrasonic + safety override + LEDs + OLED + telemetry at 10Hz
+  unsigned long now = millis();
+  if (now - last_status >= STATUS_MS) {
+    last_status = now;
+
+    long dist = readDistance();
+    bool obstacle = (dist > 0 && dist < OBSTACLE_CM);
+
+    bool stopped = cmdStopped || obstacle;     // safety override
+    int  diff = cmdLeft - cmdRight;
+    bool turnRight = (!stopped && diff >  TURN_MARGIN);
+    bool turnLeft  = (!stopped && diff < -TURN_MARGIN);
+
+    digitalWrite(LED_FOLLOW, stopped ? LOW : HIGH);
+    digitalWrite(LED_RIGHT, turnRight ? HIGH : LOW);
+    digitalWrite(LED_LEFT,  turnLeft  ? HIGH : LOW);
+
+    if (now > asl_until) {
+      const char* state = obstacle ? "OBSTACLE" : (stopped ? "STOPPED" : "FOLLOW");
+      const char* dir = stopped ? "-" : (turnLeft ? "LEFT" : (turnRight ? "RIGHT" : "STRAIGHT"));
+      drawState(state, dist, dir);
+    }
+
+    // telemetry back to laptop (single ultrasonic reported as center; others 999=clear)
+    Serial.print("STATUS 7.40 999 ");
+    Serial.print(dist < 0 ? 999 : dist);
+    Serial.print(" 999 0 0 0 0 0 0\n");
   }
 }

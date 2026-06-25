@@ -105,7 +105,10 @@ def draw_hand(frame, result):
 
 # ── overlay ───────────────────────────────────────────────────────────────────
 
-def draw_overlay(frame, bbox, labels, stopped, asl_letter):
+OBSTACLE_CM = 20   # matches the Arduino's OBSTACLE_CM
+
+
+def draw_overlay(frame, bbox, labels, stopped, asl_letter, status=None):
     if bbox is not None:
         x1, y1, x2, y2 = map(int, bbox)
         color = (0, 0, 255) if stopped else (0, 255, 0)
@@ -116,13 +119,25 @@ def draw_overlay(frame, bbox, labels, stopped, asl_letter):
         cv2.putText(frame, f"{name} {conf:.0%}", (lx1, ly1 - 6),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 165, 0), 2)
 
-    status = "GESTURE STOP" if stopped else "FOLLOWING"
-    cv2.putText(frame, status, (10, 32),
+    status_text = "GESTURE STOP" if stopped else "FOLLOWING"
+    cv2.putText(frame, status_text, (10, 32),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
 
     if asl_letter:
         cv2.putText(frame, f"ASL: {asl_letter}", (10, 70),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 80, 200), 3)
+
+    # ── telemetry returned from the ESP32/Arduino (closes the loop) ──
+    if status is not None:
+        dc = status.get("dc", 999)
+        vbat = status.get("vbat", 0)
+        cv2.putText(frame, f"ESP dist: {int(dc)}cm   vbat: {vbat:.1f}V",
+                    (10, frame.shape[0] - 15),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
+        if 0 < dc < OBSTACLE_CM:
+            cv2.putText(frame, "!! OBSTACLE - ROBOT OVERRIDE STOP !!",
+                        (10, frame.shape[0] - 45),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -226,7 +241,8 @@ def main():
         # ── display ──
         if not args.no_display:
             vis = frame if args.webcam else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            draw_overlay(vis, bbox, labels, stopped, asl_display)
+            status = uart.get_status() if uart else None
+            draw_overlay(vis, bbox, labels, stopped, asl_display, status)
             cv2.imshow("Philo", vis)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
