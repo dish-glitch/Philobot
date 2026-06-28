@@ -21,7 +21,14 @@ import time
 import urllib.request
 
 import cv2
-import mediapipe as mp
+
+# MediaPipe is only needed for ASL. It has no wheel for some Python versions
+# (e.g. 3.13 on the Pi), so make it optional — person-following works without it.
+try:
+    import mediapipe as mp
+    HAS_MEDIAPIPE = True
+except ImportError:
+    HAS_MEDIAPIPE = False
 
 from tracker import PoseTracker
 from controller import PhiloController
@@ -170,7 +177,9 @@ def main():
     # ASL model (optional — skipped if not trained yet)
     asl_model  = None
     landmarker = None
-    if os.path.exists(ASL_MODEL_FILE):
+    if not HAS_MEDIAPIPE:
+        print("MediaPipe not installed — ASL disabled, running person-following only.")
+    elif os.path.exists(ASL_MODEL_FILE):
         download_hand_model()
         landmarker = create_landmarker()
         with open(ASL_MODEL_FILE, "rb") as f:
