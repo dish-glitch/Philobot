@@ -42,7 +42,11 @@ ASL_MODEL_FILE = "asl_model.pkl"
 
 # ── camera ────────────────────────────────────────────────────────────────────
 
-def open_camera(use_webcam):
+def open_camera(use_webcam, source=None):
+    # --source: a stream URL (e.g. http://169.254.x.x:8080/video) or a device index
+    if source is not None:
+        src = int(source) if str(source).isdigit() else source
+        return cv2.VideoCapture(src)
     if use_webcam:
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_W)
@@ -145,9 +149,14 @@ def draw_overlay(frame, bbox, labels, stopped, asl_letter, status=None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--webcam",     action="store_true")
+    parser.add_argument("--source",     default=None,
+                        help="camera source: a stream URL (e.g. http://169.254.x.x:8080/video) or device index")
     parser.add_argument("--serial",     default=None)
     parser.add_argument("--no-display", action="store_true")
     args = parser.parse_args()
+
+    # use OpenCV-style capture (cap.read + BGR) for webcam or any --source; else Pi camera
+    use_cv = args.webcam or (args.source is not None)
 
     # Serial (optional)
     uart = None
@@ -170,7 +179,7 @@ def main():
     else:
         print("No ASL model found — run asl_collect.py first to enable ASL.")
 
-    cap     = open_camera(args.webcam)
+    cap     = open_camera(args.webcam, args.source)
     tracker = PoseTracker()
     ctrl    = PhiloController()
 
@@ -184,11 +193,11 @@ def main():
     print("Running. Press Q to quit.")
 
     while True:
-        frame = grab_frame(cap, args.webcam)
+        frame = grab_frame(cap, use_cv)
         if frame is None:
             break
 
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if args.webcam else frame
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if use_cv else frame
         frame_count += 1
 
         # ── person following + gesture stop ──
@@ -209,7 +218,7 @@ def main():
             result = landmarker.detect(mp_img)
 
             if not args.no_display:
-                draw_hand(frame if args.webcam else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
+                draw_hand(frame if use_cv else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
                           result)
 
             row = hand_features(result)
@@ -240,7 +249,7 @@ def main():
 
         # ── display ──
         if not args.no_display:
-            vis = frame if args.webcam else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            vis = frame if use_cv else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             status = uart.get_status() if uart else None
             draw_overlay(vis, bbox, labels, stopped, asl_display, status)
             cv2.imshow("Philo", vis)
@@ -250,7 +259,7 @@ def main():
     if uart:
         uart.send_cmd(0, 0, 0)
         uart.close()
-    if args.webcam:
+    if use_cv:
         cap.release()
     else:
         cap.stop()
