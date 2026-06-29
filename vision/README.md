@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Raspberry Pi 4 is Philo's eyes and brain. It runs a camera feed through YOLOv8 pose estimation, figures out where the person is relative to the robot's center, and sends short commands over serial to the ESP32 telling it which way to go.
+The Raspberry Pi 5 is Philo's eyes and brain. It runs a camera feed through YOLOv8 pose estimation, figures out where the person is relative to the robot's center, and sends short commands over serial to the ESP32 telling it which way to go.
 
 It also handles gesture control entirely in software — no extra hardware needed. When the person raises their hand, the Pi detects it and sends a stop command. When they lower it, normal following resumes.
 
