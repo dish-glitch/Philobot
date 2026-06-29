@@ -162,6 +162,8 @@ def main():
     parser.add_argument("--no-display", action="store_true")
     parser.add_argument("--objects",    action="store_true",
                         help="also run object-labeling model (heavy — laptop only, off on Pi)")
+    parser.add_argument("--manual",     action="store_true",
+                        help="enable Xbox controller; A button toggles AUTO (follow) / MANUAL (drive)")
     args = parser.parse_args()
 
     # use OpenCV-style capture (cap.read + BGR) for webcam or any --source; else Pi camera
@@ -200,6 +202,18 @@ def main():
     tracker = PoseTracker(enable_objects=args.objects)
     ctrl    = PhiloController()
 
+    # Optional Xbox-controller manual drive
+    gamepad = None
+    mode = "AUTO"
+    if args.manual:
+        try:
+            from gamepad import Gamepad
+            gamepad = Gamepad()
+            mode = "MANUAL"   # start driving when a controller is requested
+            print("Manual control ON — press A to toggle AUTO (follow) / MANUAL (drive).")
+        except Exception as e:
+            print(f"Controller unavailable ({e}); staying in AUTO.")
+
     fps_t0, fps_n = time.time(), 0
 
     frame_count    = 0
@@ -209,88 +223,105 @@ def main():
     asl_sent_time  = 0
     asl_display    = None   # letter shown on screen
 
-    print("Running. Press Q to quit.")
+    print("Running. Press Q to quit." + ("  [A = AUTO/MANUAL toggle]" if gamepad else ""))
 
-    while True:
-        frame = grab_frame(cap, use_cv)
-        if frame is None:
-            break
-
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if use_cv else frame
-        frame_count += 1
-
-        # FPS readout every ~3s
-        fps_n += 1
-        if time.time() - fps_t0 >= 3.0:
-            print(f"FPS: {fps_n / (time.time() - fps_t0):.1f}")
-            fps_t0, fps_n = time.time(), 0
-
-        # ── person following + gesture stop ──
-        bbox, kpts, labels = tracker.infer(rgb)
-        kpt_ys  = tracker.gesture_keypoints(kpts)
-        stopped = ctrl.update_gesture(kpt_ys)
-
-        if uart:
-            if stopped:
-                uart.send_cmd(0, 0, 0)
-            else:
-                l, r, f = ctrl.compute_cmd(bbox, FRAME_W)
-                uart.send_cmd(l, r, f)
-
-        # ── ASL (every ASL_SKIP frames) ──
-        if asl_model and frame_count % ASL_SKIP == 0:
-            mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            result = landmarker.detect(mp_img)
-
-            if not args.no_display:
-                draw_hand(frame if use_cv else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
-                          result)
-
-            row = hand_features(result)
-            if row:
-                pred = asl_model.predict([row])[0]
-                conf = max(asl_model.predict_proba([row])[0])
-                print(f"[ASL debug] pred={pred.upper()} conf={conf:.2f}")  # remove later
-                if conf > 0.5:
-                    if pred == asl_last:
-                        asl_confirm += 1
-                    else:
-                        asl_last    = pred
-                        asl_confirm = 1
-
-                    if asl_confirm >= ASL_CONFIRM:
-                        now = time.time()
-                        if pred != asl_sent or (now - asl_sent_time) > ASL_COOLDOWN:
-                            asl_display   = pred.upper()
-                            asl_sent      = pred
-                            asl_sent_time = now
-                            print(f"ASL → {pred.upper()}")
-                            if uart:
-                                # reuse serial connection to send ASL
-                                uart.ser.write(f"ASL {pred.upper()}\n".encode())
-            else:
-                asl_last    = None
-                asl_confirm = 0
-
-        # ── display ──
-        if not args.no_display:
-            vis = frame if use_cv else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            status = uart.get_status() if uart else None
-            draw_overlay(vis, bbox, labels, stopped, asl_display, status)
-            cv2.imshow("Philo", vis)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+    try:
+        while True:
+            frame = grab_frame(cap, use_cv)
+            if frame is None:
                 break
 
-    if uart:
-        uart.send_cmd(0, 0, 0)
-        uart.close()
-    if use_cv:
-        cap.release()
-    else:
-        cap.stop()
-    if landmarker:
-        landmarker.close()
-    cv2.destroyAllWindows()
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if use_cv else frame
+            frame_count += 1
+
+            # FPS readout every ~3s
+            fps_n += 1
+            if time.time() - fps_t0 >= 3.0:
+                print(f"FPS: {fps_n / (time.time() - fps_t0):.1f}")
+                fps_t0, fps_n = time.time(), 0
+
+            # ── controller poll + mode toggle ──
+            man_l, man_r = 0, 0
+            if gamepad:
+                man_l, man_r, toggle = gamepad.poll()
+                if toggle:
+                    mode = "AUTO" if mode == "MANUAL" else "MANUAL"
+                    print(f"Mode -> {mode}")
+
+            bbox, labels, stopped = None, [], False
+
+            if mode == "MANUAL":
+                # drive straight from the controller; skip vision to save CPU
+                if uart:
+                    uart.send_cmd(man_l, man_r, 0)
+            else:
+                # ── AUTO: person following + gesture stop ──
+                bbox, kpts, labels = tracker.infer(rgb)
+                kpt_ys  = tracker.gesture_keypoints(kpts)
+                stopped = ctrl.update_gesture(kpt_ys)
+
+                if uart:
+                    if stopped:
+                        uart.send_cmd(0, 0, 0)
+                    else:
+                        l, r, f = ctrl.compute_cmd(bbox, FRAME_W)
+                        uart.send_cmd(l, r, f)
+
+                # ── ASL (every ASL_SKIP frames) ──
+                if asl_model and frame_count % ASL_SKIP == 0:
+                    mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+                    result = landmarker.detect(mp_img)
+
+                    if not args.no_display:
+                        draw_hand(frame if use_cv else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR),
+                                  result)
+
+                    row = hand_features(result)
+                    if row:
+                        pred = asl_model.predict([row])[0]
+                        conf = max(asl_model.predict_proba([row])[0])
+                        if conf > 0.5:
+                            if pred == asl_last:
+                                asl_confirm += 1
+                            else:
+                                asl_last    = pred
+                                asl_confirm = 1
+
+                            if asl_confirm >= ASL_CONFIRM:
+                                now = time.time()
+                                if pred != asl_sent or (now - asl_sent_time) > ASL_COOLDOWN:
+                                    asl_display   = pred.upper()
+                                    asl_sent      = pred
+                                    asl_sent_time = now
+                                    print(f"ASL -> {pred.upper()}")
+                                    if uart:
+                                        uart.ser.write(f"ASL {pred.upper()}\n".encode())
+                    else:
+                        asl_last    = None
+                        asl_confirm = 0
+
+            # ── display ──
+            if not args.no_display:
+                vis = frame if use_cv else cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                status = uart.get_status() if uart else None
+                draw_overlay(vis, bbox, labels, stopped, asl_display, status)
+                cv2.putText(vis, f"MODE: {mode}", (10, vis.shape[0] - 75),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                cv2.imshow("Philo", vis)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+    finally:
+        # always stop the robot + clean up, even on Ctrl+C
+        if uart:
+            uart.send_cmd(0, 0, 0)
+            uart.close()
+        if use_cv:
+            cap.release()
+        else:
+            cap.stop()
+        if landmarker:
+            landmarker.close()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
