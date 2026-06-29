@@ -46,7 +46,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 
 **Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
 
-**Sign language recognition:** The camera also detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Currently works for a subset of letters — confidence sits around 50% for some signs and model training is ongoing to expand coverage and improve reliability. *Note: this feature is experimental. We know it is limited and are actively working to improve it.*
+**Sign language recognition:** The camera detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. The model works well across the letters tested — confident, consistent recognition confirmed in live testing on Pi 5.
 
 **Obstacle avoidance:** Three HC-SR04 ultrasonic sensors (front-left at -30 degrees, front-center, front-right at +30 degrees) feed into a priority layer in ESP32 firmware. The Pi handles direction. The ESP32 handles not hitting things. These are separate concerns and intentionally kept that way.
 
@@ -183,16 +183,17 @@ Philo/
 | June 21, 2026 | PCB layout complete, DRC clean, Gerbers exported |
 | June 22, 2026 | ESP32 firmware skeleton complete — all modules compile (motors, encoders, ultrasonic, IMU, OLED, Pi UART) |
 | June 22, 2026 | Gesture stop function confirmed working (tested on Arduino) |
-| June 22, 2026 | Sign language recognition working for subset of letters — OLED display output confirmed. Training ongoing for full alphabet. |
+| June 22, 2026 | Sign language recognition working for subset of letters — OLED display output confirmed |
 | June 22, 2026 | Chassis design started in Fusion 360 |
+| June 28, 2026 | Upgraded to Raspberry Pi 5 with active cooler — camera confirmed working |
+| June 28, 2026 | YOLOv8n-pose running live on Pi 5 — person following confirmed |
+| June 28, 2026 | ASL sign recognition confirmed working well — confident, consistent results in live testing |
 | — | PCB ordered from JLCPCB |
 | — | Chassis v1 printed in PETG-CF |
 | — | PCB arrived, soldered, power-on test passed |
 | — | Basic motor spin confirmed over serial |
-| — | YOLOv8n-pose running live on RPi, 10+ FPS confirmed |
-| — | First person following — open loop |
+| — | First person following on robot hardware |
 | — | Gesture control working on robot |
-| — | Sign language full alphabet trained and deployed |
 | — | Obstacle avoidance tuned |
 | — | Demo video filmed |
 | Aug 17, 2026 | School starts — project complete |
@@ -204,9 +205,10 @@ Philo/
 - [x] KiCad schematic — complete, ERC clean
 - [x] PCB layout — complete, DRC clean, Gerbers exported
 - [x] ESP32 firmware skeleton — all modules compile (motors, encoders, ultrasonic, IMU, OLED, Pi UART)
-- [x] Pi vision stack — YOLOv8 person following + gesture + ASL running on laptop/Arduino
-- [x] Gesture stop — confirmed working in bench testing (Arduino stand-in)
-- [x] ASL sign recognition — working for subset of letters; training ongoing (see issues #1 #3 #4)
+- [x] Pi vision stack — YOLOv8 person following + gesture + ASL running on Pi 5
+- [x] YOLOv8n-pose live on Pi 5 — person following confirmed working
+- [x] Gesture stop — confirmed working in bench testing
+- [x] ASL sign recognition — confident and consistent in live testing on Pi 5
 - [ ] Gesture sensitivity tuning — currently too sensitive, fix tracked in issue #2
 - [ ] PCB fabrication (JLCPCB)
 - [ ] Chassis design (Fusion 360) — in progress
