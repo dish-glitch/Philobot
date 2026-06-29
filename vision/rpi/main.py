@@ -160,6 +160,8 @@ def main():
                         help="camera source: a stream URL (e.g. http://169.254.x.x:8080/video) or device index")
     parser.add_argument("--serial",     default=None)
     parser.add_argument("--no-display", action="store_true")
+    parser.add_argument("--objects",    action="store_true",
+                        help="also run object-labeling model (heavy — laptop only, off on Pi)")
     args = parser.parse_args()
 
     # use OpenCV-style capture (cap.read + BGR) for webcam or any --source; else Pi camera
@@ -189,8 +191,10 @@ def main():
         print("No ASL model found — run asl_collect.py first to enable ASL.")
 
     cap     = open_camera(args.webcam, args.source)
-    tracker = PoseTracker()
+    tracker = PoseTracker(enable_objects=args.objects)
     ctrl    = PhiloController()
+
+    fps_t0, fps_n = time.time(), 0
 
     frame_count    = 0
     asl_last       = None
@@ -208,6 +212,12 @@ def main():
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) if use_cv else frame
         frame_count += 1
+
+        # FPS readout every ~3s
+        fps_n += 1
+        if time.time() - fps_t0 >= 3.0:
+            print(f"FPS: {fps_n / (time.time() - fps_t0):.1f}")
+            fps_t0, fps_n = time.time(), 0
 
         # ── person following + gesture stop ──
         bbox, kpts, labels = tracker.infer(rgb)

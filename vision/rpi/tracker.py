@@ -9,19 +9,23 @@ RIGHT_WRIST    = 10
 
 
 class PoseTracker:
-    def __init__(self, model_path="yolov8n-pose.pt", imgsz=320, conf=0.5):
-        self.pose_model   = YOLO(model_path)
-        self.detect_model = YOLO("yolov8s.pt")   # small model — more accurate than nano, fine on laptop
+    def __init__(self, model_path="yolov8n-pose.pt", imgsz=256, conf=0.5,
+                 enable_objects=False):
+        self.pose_model = YOLO(model_path)
         self.imgsz = imgsz
         self.conf  = conf
-        self.detect_conf = 0.35                   # lower threshold = catches more objects
+        # Object-labeling model is OPTIONAL and heavy — off by default so the Pi
+        # only runs the lightweight pose model (huge speedup). Enable on a laptop.
+        self.enable_objects = enable_objects
+        self.detect_model = YOLO("yolov8s.pt") if enable_objects else None
+        self.detect_conf = 0.35
 
     def infer(self, frame):
         """
         Returns:
           bbox   — [x1,y1,x2,y2] of largest detected person, or None
           kpts   — [17,2] keypoints for that person, or None
-          labels — list of (x1,y1,x2,y2,name,conf) for every non-person detection
+          labels — list of (x1,y1,x2,y2,name,conf) for non-person detections (empty if objects disabled)
         """
         # Pose model → person box + keypoints
         pose_results = self.pose_model(frame, imgsz=self.imgsz, conf=self.conf, verbose=False)
@@ -38,9 +42,12 @@ class PoseTracker:
                 if kpts is not None and best < len(kpts):
                     person_kpts = kpts[best]
 
-        # Detect model → everything that isn't a person
-        det_results = self.detect_model(frame, imgsz=640, conf=self.detect_conf, verbose=False)
+        # Object detection — only if explicitly enabled (skipped on the Pi)
         labels = []
+        if not self.enable_objects:
+            return person_bbox, person_kpts, labels
+
+        det_results = self.detect_model(frame, imgsz=640, conf=self.detect_conf, verbose=False)
 
         if det_results and det_results[0].boxes is not None:
             boxes   = det_results[0].boxes.xyxy.cpu().numpy()
