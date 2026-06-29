@@ -118,8 +118,8 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | HC-SR04 Ultrasonic Sensors | Obstacle detection | 3 | ~$1 ea | Amazon |
 | 2S LiPo 2200mAh | Main battery | 1 | ~$14 | Amazon / HobbyKing |
 | 2S LiPo Balance Charger | Charging | 1 | ~$10 | Amazon |
-| Raspberry Pi 4 (2GB+) | Vision compute | 1 | ~$45 | [Adafruit](https://www.adafruit.com) |
-| Raspberry Pi Camera Module v2 | 8MP, 120 degree FOV | 1 | ~$25 | Amazon |
+| Raspberry Pi 5 (4GB) | Vision compute | 1 | on hand | From friend — with active cooler |
+| Raspberry Pi Camera Module 3 | 12MP, autofocus | 1 | on hand | Attached, confirmed working |
 | AMS1117-3.3 LDO | 3.3V rail for ESP32 logic | 1 | ~$1 | DigiKey |
 | Pololu D24V50F5 Buck (5V 5A) | 5V rail for Raspberry Pi | 1 | ~$15 | Pololu |
 | SMD Resistors 0603 assortment | Pull-ups, current limiting | — | ~$9 | Amazon |

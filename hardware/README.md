@@ -28,7 +28,7 @@ Every part below has been cross-referenced against its datasheet or product page
 | MPU-6050 (GY-521 module) | 3-axis accel +/-16g, 3-axis gyro +/-2000 deg/s, I2C, 3.3-5V, 21x15mm | [InvenSense datasheet](https://product.tdk.com/en/search/sensor/mortion-inertial/imu/info?part_no=MPU-6050) | 13g |
 | HC-SR04 x3 | 5V, <15mA, 2-400cm range, 40kHz, 45x20x15mm | [Sparkfun datasheet](https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf) | 10g each |
 | AMS1117-3.3 LDO | 3.3V out, 800mA max, SOT-223 package | AMS datasheet | <1g |
-| Pololu D24V50F5 Buck (5V/5A) | 4.5-38V in, 5.0V fixed out, 5A continuous, regulated module | [Pololu D24V50F5](https://www.pololu.com/product/2851) | ~5g |
+| Pololu D24V50F5 Buck (5V/5A) | 4.5-38V in, 5.0V fixed out, 5A continuous, regulated module | [Pololu D24V50F5](https://www.pololu.com/product/2851) | ~5g | ⚠️ Running near capacity with Pi 5 (up to 4.5A peak) |
 | JGA25-370 x4 | 6V, 200 RPM, 1.8-2.2 kg*cm stall torque, 4mm D-shaft, 25mm body diameter | Product page | 90g each |
 | 2S LiPo 2200mAh | 7.4V nominal, 8.4V full, 6.4V cutoff, 97-130g depending on model | Gens Ace product page | ~110g |
 | XT30 Connector | 30A continuous, gold plated, compact | XT30 spec | 3g per pair |
@@ -241,7 +241,7 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 
 | Component | Voltage Rail | Typical Current | Peak (transient) | Source |
 |---|---|---|---|---|
-| Raspberry Pi 4 (inference load) | 5V | 2.5A | 3.0A | Official Pi 4 power spec |
+| Raspberry Pi 5 w/ active cooler (inference load) | 5V | 3.5A | 4.5A | Official Pi 5 power spec — upgraded from Pi 4. Active cooler fitted. D24V50F5 at 5A is near capacity; monitor for throttling. |
 | 4x JGA25-370 motors (running load at 40% torque) | VBAT | 2.0A total | 8.8A (all motors stall at 7.4V — above 7A polyfuse hold, firmware watchdog stops motors first) | Motor spec + stall analysis |
 | 4x JGA25-370 motor reversal transient | VBAT | — | ~4.4A for <50ms | Back-EMF analysis (2 motors reverse at once) |
 | ESP32 (active, WiFi off) | 3.3V | 240mA | 340mA | Espressif datasheet |

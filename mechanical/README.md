@@ -30,7 +30,7 @@ The ESP32 controls each side independently via PWM. hummos430 does not need to w
 
 | Component | Source | Confirmed Weight |
 |---|---|---|
-| Raspberry Pi 4 Model B | [Official datasheet](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-datasheet.pdf) | **46g** |
+| Raspberry Pi 5 (4GB) w/ active cooler | Official spec | **51g + ~15g cooler = ~66g** |
 | Pi Camera Module v2 | Manufacturer spec | **3g** |
 | ESP32-WROOM-32 module | Espressif datasheet | **2.5g** |
 | HC-SR04 ultrasonic x3 | Product spec, 10g each | **30g** |
@@ -44,7 +44,7 @@ The ESP32 controls each side independently via PWM. hummos430 does not need to w
 | PETG-CF chassis (all printed parts, see calculation below) | Calculated from geometry and density | **~180g** |
 | Wiring, connectors, cable ties | Measured estimate | **50g** |
 | M2/M2.5/M3 standoffs and screws | Hardware kit estimate | **30g** |
-| **Total** | | **~1027g** |
+| **Total** | | **~1047g** |
 | **Design target with 15% margin** | | **~1.2kg** |
 
 **Why 15% margin:** Wiring estimates are imprecise. Small additions (heatsinks, extra connectors, zip ties) accumulate. Design and test everything assuming 1.2kg. If the robot comes in lighter, it only moves faster.

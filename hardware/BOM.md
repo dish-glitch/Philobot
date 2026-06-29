@@ -27,7 +27,7 @@ This is the authoritative parts list matching the annotated KiCad schematic. Ref
 |---|---|---|---|---|---|
 | OLED display | SSD1306, 128x64, I2C, 0.96 inch | 2 | J4 (J_MAST) | ~$4 ea (Amazon) | One at 0x3C (telemetry / left eye), one at 0x3D (right eye). Set address via solder jumper on back of module. Mounted on camera mast as eyes. **Buy 2.** |
 | HC-SR04 | Ultrasonic, 5V | 3 | J1/J2/J3 | Echo lines go through on-board 1k/2k dividers |
-| Raspberry Pi 4 | — | 1 | J5 + J6 | 5V from rail; UART for commands |
+| Raspberry Pi 5 (4GB) | — | 1 | J5 + J6 | 5V from rail; UART for commands. On hand with active cooler. ⚠️ Pi 5 draws up to 4.5A — D24V50F5 at 5A is near capacity under full inference load. |
 | Pi Camera v2 | CSI | 1 | Pi CSI port | Not on this PCB |
 | USB speaker | Small amplified | 1 | Pi USB | Audio is Pi-side only |
 | 2S LiPo 2200mAh | 7.4V nominal, XT30 plug | 1 | J7 (XT30) | **2S only — NOT 4S** |
