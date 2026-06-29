@@ -182,11 +182,17 @@ def main():
     if not HAS_MEDIAPIPE:
         print("MediaPipe not installed — ASL disabled, running person-following only.")
     elif os.path.exists(ASL_MODEL_FILE):
-        download_hand_model()
-        landmarker = create_landmarker()
-        with open(ASL_MODEL_FILE, "rb") as f:
-            asl_model = pickle.load(f)
-        print("ASL model loaded.")
+        try:
+            download_hand_model()
+            landmarker = create_landmarker()
+            with open(ASL_MODEL_FILE, "rb") as f:
+                asl_model = pickle.load(f)
+            print("ASL model loaded.")
+        except Exception as e:
+            print(f"Could not load ASL model ({e}).")
+            print("ASL disabled — following still runs. (Retrain the model with this Pi's library versions.)")
+            asl_model = None
+            landmarker = None
     else:
         print("No ASL model found — run asl_collect.py first to enable ASL.")
 
