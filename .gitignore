@@ -37,3 +37,6 @@ firmware/esp32/.vscode/ipch
 # ── OS junk ───────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# extracted ASL features (portable, regenerate)
+asl_features.csv
