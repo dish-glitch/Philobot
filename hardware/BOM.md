@@ -23,9 +23,9 @@ This is the authoritative parts list matching the annotated KiCad schematic. Ref
 
 ## Off-Board Modules (connect via headers)
 
-| Part | Spec | Qty | Connector | Notes |
-|---|---|---|---|---|
-| OLED eyes | SSD1306/SH1106, 128x64, I2C | 2 | J4 (J_MAST) | 0x3C and 0x3D. Mounted on camera mast |
+| Part | Spec | Qty | Connector | Est. Price | Notes |
+|---|---|---|---|---|---|
+| OLED display | SSD1306, 128x64, I2C, 0.96 inch | 2 | J4 (J_MAST) | ~$4 ea (Amazon) | One at 0x3C (telemetry / left eye), one at 0x3D (right eye). Set address via solder jumper on back of module. Mounted on camera mast as eyes. **Buy 2.** |
 | HC-SR04 | Ultrasonic, 5V | 3 | J1/J2/J3 | Echo lines go through on-board 1k/2k dividers |
 | Raspberry Pi 4 | — | 1 | J5 + J6 | 5V from rail; UART for commands |
 | Pi Camera v2 | CSI | 1 | Pi CSI port | Not on this PCB |
