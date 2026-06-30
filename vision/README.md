@@ -130,7 +130,7 @@ picam2.set_controls({
 **yolov8n-pose.pt** — YOLOv8 nano pose estimation model.
 
 - Detects people AND their 17 body keypoints in a single pass
-- Runs at 10-15 FPS on Raspberry Pi 4 at imgsz=320
+- Runs at 15-20 FPS on Raspberry Pi 5 at imgsz=320
 - This is fast enough for following a walking person
 - Do not use the larger models (s, m, l) — they are too slow on Pi hardware without a GPU
 

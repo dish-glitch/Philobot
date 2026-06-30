@@ -288,14 +288,14 @@ firmware/esp32/
 |   +-- motors.cpp / .h     # PWM, PID, encoder ISR
 |   +-- ultrasonic.cpp / .h # HC-SR04 sequential polling and priority logic
 |   +-- imu.cpp / .h        # MPU-6050 I2C read, tilt check
-|   +-- pi_comm.cpp / .h   # UART parse (CMD numeric), STATUS send; MOOD parse planned
+|   +-- pi_comm.cpp / .h    # UART parse (CMD numeric), STATUS send; MOOD parse planned
 |   +-- display.cpp / .h    # OLED eyes, core-1 FreeRTOS task, mood rendering
 +-- test/                   # unit tests if needed
 ```
 
 ---
 
-## Pin Assignment (draft — confirm against KiCad schematic)
+## Pin Assignment (final — verified from KiCad netlist)
 
 | Function | ESP32 GPIO | Notes |
 |---|---|---|

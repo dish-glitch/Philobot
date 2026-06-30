@@ -8,7 +8,7 @@
 
 The PCB is the central hub of Philo. Everything connects here — motors, sensors, battery, Raspberry Pi, ESP32 firmware. Designed in KiCad, fabricated at JLCPCB (5-board run, ~10 day lead time including shipping).
 
-**Current phase: PCB layout.** Schematic is complete — 0 ERC errors, all footprints assigned. KiCad files are in [`hardware/kicad/`](kicad/).
+**Current phase: PCB fabrication.** Schematic complete (0 ERC errors), PCB layout complete (DRC clean, Gerbers exported). Ready to order from JLCPCB. KiCad files are in [`hardware/kicad/`](kicad/).
 
 **For the actual build, start here:**
 - **[BOM.md](BOM.md)** — complete parts list (every IC, module, passive, connector) — updated to match annotated schematic ref designators
@@ -28,7 +28,7 @@ Every part below has been cross-referenced against its datasheet or product page
 | MPU-6050 (GY-521 module) | 3-axis accel +/-16g, 3-axis gyro +/-2000 deg/s, I2C, 3.3-5V, 21x15mm | [InvenSense datasheet](https://product.tdk.com/en/search/sensor/mortion-inertial/imu/info?part_no=MPU-6050) | 13g |
 | HC-SR04 x3 | 5V, <15mA, 2-400cm range, 40kHz, 45x20x15mm | [Sparkfun datasheet](https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf) | 10g each |
 | AMS1117-3.3 LDO | 3.3V out, 800mA max, SOT-223 package | AMS datasheet | <1g |
-| Pololu D24V50F5 Buck (5V/5A) | 4.5-38V in, 5.0V fixed out, 5A continuous, regulated module | [Pololu D24V50F5](https://www.pololu.com/product/2851) | ~5g | ⚠️ Running near capacity with Pi 5 (up to 4.5A peak) |
+| Pololu D24V50F5 Buck (5V/5A) | 4.5-38V in, 5.0V fixed out, 5A continuous ⚠️ near capacity with Pi 5 (up to 4.5A peak) | [Pololu D24V50F5](https://www.pololu.com/product/2851) | ~5g |
 | JGA25-370 x4 | 6V, 200 RPM, 1.8-2.2 kg*cm stall torque, 4mm D-shaft, 25mm body diameter | Product page | 90g each |
 | 2S LiPo 2200mAh | 7.4V nominal, 8.4V full, 6.4V cutoff, 97-130g depending on model | Gens Ace product page | ~110g |
 | XT30 Connector | 30A continuous, gold plated, compact | XT30 spec | 3g per pair |
@@ -103,10 +103,10 @@ Input: VBAT (6.4-8.4V)
 Output: 5.0V (fixed — no trimpot to set, unlike the MP1584EN module)
 EN pin: tie to VIN or leave floating (internal pull-up enables by default). PG (power-good) pin optional.
 
-**Total 5V load: Pi 2.5A (3.0A peak) + AMS1117 cascade 0.27A = ~2.77A.** D24V50F5 rated 5A. Margin is over 2A — comfortable even with a USB speaker on the Pi and full enclosure derating. This is deliberate headroom on the rail whose failure (Pi brownout) most reliably kills a demo.
+**Total 5V load: Pi 3.5A typical (4.5A peak) + AMS1117 cascade 0.27A = ~3.77A typical.** D24V50F5 rated 5A. At peak Pi load the margin is only ~0.5A — monitor for throttling during full inference. Active cooler on the Pi 5 mitigates thermal throttling and reduces average power draw.
 
 **Output capacitors — updated from earlier revision:**
-- 1000uF electrolytic (upgraded from 100uF based on Pi 4 inrush spike analysis)
+- 1000uF electrolytic (upgraded from 100uF based on Pi inrush spike analysis)
 - 100nF ceramic in parallel
 
 Why 1000uF: When the Pi 4 CPU ramps from idle to full inference load, it draws a current spike faster than the converter's control loop can respond (~microseconds). The 1000uF cap supplies that spike locally while the converter catches up. At a 3A spike for 1ms, 1000uF holds the voltage within 3mV of setpoint. 100uF would sag by 30mV — enough to trigger the Pi's undervoltage warning. Keep this cap even with the 5A buck — it handles the fast transient the regulator's loop can't.
@@ -254,7 +254,7 @@ Both within ESP32 ADC range (0-3.3V). Firmware triggers low-battery behavior at 
 | **Motor reversal transient** | | | ~4.4A for <50ms | Absorbed by 470uF caps |
 | **All motors stalled** | | ~8.8A sustained | | Above 7A hold — polyfuse trips slowly; firmware watchdog (500ms) is primary stall protection |
 
-**Note on speaker peak:** the ~600mA speaker peak is brief (during a sound clip) and stacks on the 5V rail. With the 5A D24V50F5, total worst case (~2.77A + 0.6A = ~3.4A) sits comfortably under 5A — the speaker no longer threatens the rail. (This was a real concern on the old 3A part; the 5A upgrade resolves it.)
+**Note on speaker peak:** the ~600mA speaker peak is brief (during a sound clip) and stacks on the 5V rail. With the 5A D24V50F5, total worst case (~3.77A typical + 0.6A = ~4.4A) still fits under the 5A rating — tight but acceptable. If throttling is observed, skip the speaker until the rail is verified stable under inference load.
 
 **Battery runtime:** 2200mAh x 7.4V = 16.3Wh. At ~35W normal draw: ~27 minutes. Sufficient for demo. If runtime is marginal, upgrade to 3000mAh LiPo (same voltage, same connectors, adds ~35g).
 
@@ -302,7 +302,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 
 ### 2. RPi Brownout from 5V Sag
 **Cause:** Pi current spike faster than buck converter response.
-**Mitigation:** D24V50F5 (5A rated, ~2A headroom over load) + 1000uF output cap. Regulator supplies sustained current with margin; cap covers the fast transient its loop can't.
+**Mitigation:** D24V50F5 (5A rated, ~0.5A headroom at Pi 5 peak) + 1000uF output cap. The cap covers fast transients the regulator loop can't respond to. Monitor for undervoltage during full inference — active cooler on Pi 5 reduces average draw significantly.
 
 ### 3. Ghost Resets from Ground Bounce
 **Cause:** Motor switching current through shared ground traces injects noise into ESP32 GND reference.
@@ -333,8 +333,8 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 **Mitigation:** 100nF cap on each encoder signal line to GND at ESP32 pin. Route sensor cables away from motor cables. Keep ultrasonic cables under 20cm.
 
 ### 10. Pi Thermal Throttling Under Inference
-**Cause:** Pi 4 SoC reaches 80C without heatsink. Throttles from 1.8GHz to 1.5GHz (then 1.0GHz at 85C). Drops YOLO FPS. Slows following response.
-**Mitigation:** Self-adhesive aluminum heatsink on Pi 4 SoC (BCM2711 chip). Reduces operating temp by 15-20C. If still throttling: 30mm 5V blower fan mounted on chassis directed at Pi.
+**Cause:** Pi 5 SoC reaches 85C without cooling. Throttles from 2.4GHz down. Drops YOLO FPS. Slows following response.
+**Mitigation:** Active cooler already installed on Pi 5 (from friend). Reduces operating temp by 20-30C. Confirm no throttling with `vcgencmd get_throttled` during a full inference run before demo.
 
 ### 11. HC-SR04 Simultaneous Firing (Crosstalk)
 **Cause:** All three sensors fired at the same time. Sensor B hears Sensor A's pulse as a phantom reflection at ~0 cm. ESP32 registers a phantom wall directly in front and triggers the escape sequence every cycle.
@@ -383,7 +383,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [x] Encoder connectors J13 (ENC_L) and J14 (ENC_R)
 - [x] ERC clean — 0 errors
 
-**Layout:**
+**Layout (COMPLETE — DRC clean, Gerbers exported):**
 - [ ] Ground plane poured on bottom copper layer, net = GND
 - [ ] Stitching vias every 10mm across board area
 - [ ] Single star ground entry at XT30 negative terminal
@@ -399,8 +399,8 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [ ] Encoder traces routed away from motor traces (opposite PCB side preferred)
 - [ ] Polarity marked on motor connectors in silkscreen
 - [ ] Board outline matches dimensions given to mechanical team
-- [ ] DRC clean — zero errors
-- [ ] Gerbers verified in viewer before upload
+- [x] DRC clean — zero errors
+- [x] Gerbers exported and verified in viewer
 
 ---
 
@@ -409,7 +409,7 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 | Week | Target | Status |
 |---|---|---|
 | 1-2 | Schematic complete — all blocks, all decoupling, all connectors, ERC clean | **DONE** |
-| 2-3 | PCB layout with ground plane, DRC clean | Next |
-| 3 | Gerbers to JLCPCB, 5 boards ordered | — |
+| 2-3 | PCB layout with ground plane, DRC clean, Gerbers exported | **DONE** |
+| 3 | Gerbers to JLCPCB, 5 boards ordered | Next |
 | 4-5 | PCB arrives, solder, power-on test | — |
 | 5 | Run electrical stress test protocol before connecting Pi | — |

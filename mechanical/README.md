@@ -31,7 +31,7 @@ The ESP32 controls each side independently via PWM. hummos430 does not need to w
 | Component | Source | Confirmed Weight |
 |---|---|---|
 | Raspberry Pi 5 (4GB) w/ active cooler | Official spec | **51g + ~15g cooler = ~66g** |
-| Pi Camera Module v2 | Manufacturer spec | **3g** |
+| Pi Camera Module 3 | Manufacturer spec | **4g** |
 | ESP32-WROOM-32 module | Espressif datasheet | **2.5g** |
 | HC-SR04 ultrasonic x3 | Product spec, 10g each | **30g** |
 | MPU-6050 GY-521 module | Product spec | **13g** |
@@ -44,7 +44,7 @@ The ESP32 controls each side independently via PWM. hummos430 does not need to w
 | PETG-CF chassis (all printed parts, see calculation below) | Calculated from geometry and density | **~180g** |
 | Wiring, connectors, cable ties | Measured estimate | **50g** |
 | M2/M2.5/M3 standoffs and screws | Hardware kit estimate | **30g** |
-| **Total** | | **~1047g** |
+| **Total** | | **~1048g** |
 | **Design target with 15% margin** | | **~1.2kg** |
 
 **Why 15% margin:** Wiring estimates are imprecise. Small additions (heatsinks, extra connectors, zip ties) accumulate. Design and test everything assuming 1.2kg. If the robot comes in lighter, it only moves faster.
@@ -154,7 +154,7 @@ The battery (110g) and motors (360g) are the heaviest components. Motor weight i
 
 **Battery:** As low as possible. Centered between front and rear axles. If it sits too far back, the robot lifts its front wheels slightly on forward acceleration — the camera tilts up and loses the person. If too far forward, braking causes front-dip.
 
-**Raspberry Pi (46g):** Mount flat in the middle of the chassis, centered left-to-right. Keeps weight balanced.
+**Raspberry Pi 5 (66g with active cooler):** Mount flat in the middle of the chassis, centered left-to-right. Keeps weight balanced.
 
 **PCB (50g):** Can sit on top of or beside the Pi. Keep it centered.
 
@@ -275,7 +275,7 @@ Print vertically (mast standing upright). This puts the layer lines horizontal, 
 | Motor type (confirm JGA25-370 body diameter and M3 hole spacing — measure with calipers) | Motor pocket dimensions depend on exact motor body |
 | Battery pack dimensions (get physical dimensions of the actual battery ordered) | Bay sizing |
 | HC-SR04 body dimensions (should be 45mm x 20mm x 15mm but verify) | Sensor pocket sizing |
-| Camera mast mounts (confirm M2 hole pattern from Pi Camera v2 spec before designing top of mast) | 21mm x 12.5mm pattern per spec, but verify |
+| Camera mast mounts (confirm M2 hole pattern from Pi Camera Module 3 spec before designing top of mast) | 21mm x 12.5mm pattern per spec, but verify |
 
 Resolve all of these with the hardware team before end of Week 2.
 

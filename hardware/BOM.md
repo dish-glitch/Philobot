@@ -1,6 +1,6 @@
 # Philo — Bill of Materials (Complete)
 
-**Status: Schematic complete, ERC clean, all footprints assigned. Ready for PCB layout.**
+**Status: Schematic complete, ERC clean, PCB layout complete, DRC clean, Gerbers exported. Ready to order.**
 
 This is the authoritative parts list matching the annotated KiCad schematic. Reference designators reflect post-annotation numbering.
 
@@ -26,13 +26,13 @@ This is the authoritative parts list matching the annotated KiCad schematic. Ref
 | Part | Spec | Qty | Connector | Est. Price | Notes |
 |---|---|---|---|---|---|
 | OLED display | SSD1306, 128x64, I2C, 0.96 inch | 2 | J4 (J_MAST) | ~$4 ea (Amazon) | One at 0x3C (telemetry / left eye), one at 0x3D (right eye). Set address via solder jumper on back of module. Mounted on camera mast as eyes. **Buy 2.** |
-| HC-SR04 | Ultrasonic, 5V | 3 | J1/J2/J3 | Echo lines go through on-board 1k/2k dividers |
-| Raspberry Pi 5 (4GB) | — | 1 | J5 + J6 | 5V from rail; UART for commands. On hand with active cooler. ⚠️ Pi 5 draws up to 4.5A — D24V50F5 at 5A is near capacity under full inference load. |
-| Pi Camera v2 | CSI | 1 | Pi CSI port | Not on this PCB |
-| USB speaker | Small amplified | 1 | Pi USB | Audio is Pi-side only |
-| 2S LiPo 2200mAh | 7.4V nominal, XT30 plug | 1 | J7 (XT30) | **2S only — NOT 4S** |
-| JGA25-370 motors | 6V, 200RPM, 4mm D-shaft | 4 | J9/J10/J11/J12 | 2 per TB6612FNG |
-| Encoders | One per side | 2 | J13/J14 | GPIO34 (left), GPIO35 (right) |
+| HC-SR04 | Ultrasonic, 5V | 3 | J1/J2/J3 | ~$1 ea (Amazon) | Echo lines go through on-board 1k/2k dividers |
+| Raspberry Pi 5 (4GB) | — | 1 | J5 + J6 | on hand | 5V from rail; UART for commands. On hand with active cooler. ⚠️ Pi 5 draws up to 4.5A — D24V50F5 at 5A is near capacity under full inference load. |
+| Pi Camera Module 3 | 12MP autofocus, CSI | 1 | Pi CSI port | on hand | On hand, confirmed working. Not on this PCB — connects to Pi CSI ribbon. |
+| USB speaker | Small amplified | 1 | Pi USB | ~$8 (Amazon) | Audio is Pi-side only. See vision README for playback code. |
+| 2S LiPo 2200mAh | 7.4V nominal, XT30 plug | 1 | J7 (XT30) | ~$14 (Amazon) | **2S only — NOT 4S.** Soft-pack preferred for weight. |
+| JGA25-370 motors | 6V, 200RPM, 4mm D-shaft | 4 | J9/J10/J11/J12 | ~$8 ea (AliExpress) | 2 per TB6612FNG. Confirm 4mm D-shaft (not N20 3mm). |
+| Encoders | One per side | 2 | J13/J14 | included with motors | GPIO34 (left), GPIO35 (right). |
 
 ---
 
@@ -43,9 +43,9 @@ This is the authoritative parts list matching the annotated KiCad schematic. Ref
 | C1,C2,C3,C18,C20,C21,C25,C26,C28,C31 | 100nF | C_0603_1608Metric | 10 | Decoupling / HF bypass |
 | C17,C19,C23,C32 | 10µF | C_0805_2012Metric | 4 | Bulk ceramic decoupling |
 | C30 | 1µF | C_0603_1608Metric | 1 | ESP32 EN pin delay cap |
-| C24 | 100µF electrolytic | CP_Radial_D6.3mm_P2.50mm | 1 | VBAT input bulk |
-| C27,C29 | 470µF electrolytic (low ESR) | CP_Radial_D10.0mm_P5.00mm | 2 | TB6612FNG VM bulk (one per chip, within 3mm) |
-| C22 | 1000µF electrolytic (low ESR) | CP_Radial_D12.5mm_P5.00mm | 1 | D24V50F5 5V output bulk (Pi inrush) |
+| C24 | 100µF 16V electrolytic | CP_Radial_D6.3mm_P2.50mm | 1 | VBAT input bulk |
+| C27,C29 | 470µF 16V electrolytic (low ESR) | CP_Radial_D10.0mm_P5.00mm | 2 | TB6612FNG VM bulk (one per chip, within 3mm) |
+| C22 | 1000µF 16V electrolytic (low ESR) | CP_Radial_D12.5mm_P5.00mm | 1 | D24V50F5 5V output bulk (Pi inrush) |
 | R1,R3,R8 | 1kΩ | R_0603_1608Metric | 3 | HC-SR04 echo divider — series |
 | R2,R7,R9 | 2kΩ | R_0603_1608Metric | 3 | HC-SR04 echo divider — to GND |
 | R4,R5,R10,R12 | 10kΩ | R_0603_1608Metric | 4 | Gate resistor (Q2), EN pull-up, GPIO0 pull-up, VBAT sense |

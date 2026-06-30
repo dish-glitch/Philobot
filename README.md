@@ -32,17 +32,15 @@
 
 ## Why We Built This
 
-Most robotics projects you see online are either a pre-built kit with a tutorial, or a graduate research platform that costs $10,000 and runs ROS on a laptop strapped to a frame. We wanted the middle ground — a robot that does something real and visually impressive, built from scratch at the hardware level, for under $150.
+Most robotics projects you see online are either a pre-built kit with a tutorial, or a graduate research platform that costs $10,000 and runs ROS on a laptop strapped to a frame. We wanted the middle ground — a robot that does something real and visually impressive, built from scratch at the hardware level, for under $200.
 
-The follow-a-person problem is deceptively hard. The camera has to detect a human, figure out where they are relative to the robot, translate that into motor commands, keep the robot from walking into walls, and do all of it fast enough that the robot does not lag behind. 
-
-
+The follow-a-person problem is deceptively hard. The camera has to detect a human, figure out where they are relative to the robot, translate that into motor commands, keep the robot from walking into walls, and do all of it fast enough that the robot does not lag behind.
 
 ---
 
 ## What It Does
 
-A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the nearest person in frame, and continuously streams direction and speed commands to an ESP32 over UART. The ESP32 runs closed-loop PID speed control on four DC motors via dual H-bridge drivers. Three ultrasonic sensors on the front of the chassis act as an independent safety layer — if an obstacle is detected under 25cm, the ESP32 overrides the Pi command and stops regardless of what the vision stack says.
+A Raspberry Pi 5 runs YOLOv8 pose estimation on a live camera feed, detects the nearest person in frame, and continuously streams direction and speed commands to an ESP32 over UART. The ESP32 runs closed-loop PID speed control on four DC motors via dual H-bridge drivers. Three ultrasonic sensors on the front of the chassis act as an independent safety layer — if an obstacle is detected under 25cm, the ESP32 overrides the Pi command and stops regardless of what the vision stack says.
 
 **Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
 
@@ -56,7 +54,7 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 
 ```
 +--------------------------------------------------+
-|              Raspberry Pi 4                      |
+|              Raspberry Pi 5                      |
 |                                                  |
 |  Camera -> YOLOv8n-pose -> keypoint extraction   |
 |               |                                  |
@@ -111,26 +109,32 @@ A Raspberry Pi 4 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | Component | Purpose | Qty | Est. Price | Where |
 |---|---|---|---|---|
 | ESP32-WROOM-32 | Main MCU | 1 | ~$5 | Amazon |
-| TB6612FNG Dual H-Bridge | Motor driver (2 motors each) | 2 | ~$2 ea | [Adafruit](https://www.adafruit.com/product/2448) |
+| TB6612FNG Dual H-Bridge (bare IC, SSOP-24) | Motor driver (2 motors each) | 2 | ~$2 ea | DigiKey |
 | MPU-6050 IMU | Tilt detection, auto-stop on tip-over | 1 | ~$2 | Amazon |
 | JGA25-370 Gear Motors w/ Encoders (6V 200RPM) | Drive wheels | 4 | ~$8 ea | AliExpress |
 | 80mm Rubber Wheels | Traction | 4 | ~$3 ea | AliExpress |
 | HC-SR04 Ultrasonic Sensors | Obstacle detection | 3 | ~$1 ea | Amazon |
+| SSD1306 OLED 0.96" I2C | Eyes + ASL display on mast | 2 | ~$4 ea | Amazon |
 | 2S LiPo 2200mAh | Main battery | 1 | ~$14 | Amazon / HobbyKing |
 | 2S LiPo Balance Charger | Charging | 1 | ~$10 | Amazon |
 | Raspberry Pi 5 (4GB) | Vision compute | 1 | on hand | From friend — with active cooler |
 | Raspberry Pi Camera Module 3 | 12MP, autofocus | 1 | on hand | Attached, confirmed working |
 | AMS1117-3.3 LDO | 3.3V rail for ESP32 logic | 1 | ~$1 | DigiKey |
 | Pololu D24V50F5 Buck (5V 5A) | 5V rail for Raspberry Pi | 1 | ~$15 | Pololu |
+| Littelfuse RGEF700 Polyfuse 7A | Battery overcurrent protection | 1 | ~$2 | DigiKey |
+| AOD4185 P-channel MOSFET | Reverse polarity protection | 1 | ~$1 | DigiKey |
+| Status LED (any 5mm) | Boot/status indicator | 1 | ~$1 | Amazon |
+| Tactile switches 6mm THT | Reset + Boot buttons | 2 | ~$1 | Amazon |
 | SMD Resistors 0603 assortment | Pull-ups, current limiting | — | ~$9 | Amazon |
-| SMD Capacitors 0603/0805 assortment | Decoupling | — | ~$10 | Amazon |
+| SMD Capacitors 0603/0805 assortment | HF decoupling bypass caps | — | ~$10 | Amazon |
+| Electrolytic caps (1000µF 16V + 2×470µF 16V + 100µF 16V) | Bulk decoupling — order separately, not in SMD assortment | — | ~$5 | DigiKey |
 | XT30 Connector Pair | Battery connector | 1 | ~$2 | Amazon |
 | 2.54mm Pin Headers | Sensor and UART connectors | — | ~$6 | Amazon |
 | CP2102 USB-UART Programmer | Flash ESP32 firmware | 1 | ~$7 | Amazon |
 | Custom PCB — JLCPCB (5 boards) | From Gerbers | 1 run | ~$25 | [JLCPCB](https://jlcpcb.com) |
 | PETG-CF Filament | Chassis | — | $0 | On hand |
 | M2.5 / M3 Standoffs + Screws | Mounting hardware | — | ~$8 | Amazon |
-| **Total** | | | **~$180** | |
+| **Total** | | | **~$200** | |
 
 ---
 
