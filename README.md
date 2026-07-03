@@ -44,7 +44,7 @@ A Raspberry Pi 5 runs YOLOv8 pose estimation on a live camera feed, detects the 
 
 **Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
 
-**Sign language recognition:** The camera detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART and displayed live on the OLED (currently running on the Arduino bench rig; the ESP32 firmware port of the `ASL` message handler is next). Initial testing on Pi 5 shows strong results for most letters — broader testing across different hands, lighting, and environments is still in progress.
+**Sign language recognition:** The camera detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED (bench-tested on the Arduino stand-in; the ESP32 `ASL` handler is implemented and awaiting PCB bring-up). Initial testing on Pi 5 shows strong results for most letters — broader testing across different hands, lighting, and environments is still in progress.
 
 **Obstacle avoidance:** Three HC-SR04 ultrasonic sensors (front-left at -30 degrees, front-center, front-right at +30 degrees) feed into a priority layer in ESP32 firmware. The Pi handles direction. The ESP32 handles not hitting things. These are separate concerns and intentionally kept that way.
 
@@ -211,6 +211,7 @@ Philo/
 - [x] KiCad schematic — complete, ERC clean
 - [x] PCB layout — complete, DRC clean, Gerbers exported
 - [x] ESP32 firmware skeleton — all modules compile (motors, encoders, ultrasonic, IMU, OLED, Pi UART)
+- [x] ESP32 safety layer — 500ms watchdog, obstacle override, tilt cutoff, sequential ultrasonic firing (needs hardware validation)
 - [x] Pi vision stack — YOLOv8 person following + gesture + ASL running on Pi 5
 - [x] YOLOv8n-pose live on Pi 5 — person following confirmed working
 - [x] Gesture stop — confirmed working in bench testing

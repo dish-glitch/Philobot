@@ -18,6 +18,8 @@ void ultrasonic_init() {
 }
 
 static float ping(uint8_t trig, uint8_t echo) {
+    digitalWrite(trig, LOW);          // settle before the trigger pulse
+    delayMicroseconds(2);
     digitalWrite(trig, HIGH);
     delayMicroseconds(10);
     digitalWrite(trig, LOW);

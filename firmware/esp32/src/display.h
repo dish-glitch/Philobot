@@ -6,4 +6,5 @@
 bool display_init();
 void display_status(float vbat, float dl, float dc, float dr,
                     int32_t el, int32_t er);
+void display_asl(char letter);
 void display_clear();

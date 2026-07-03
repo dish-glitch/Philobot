@@ -35,6 +35,16 @@ void display_status(float vbat, float dl, float dc, float dr,
     oled.display();
 }
 
+void display_asl(char letter) {
+    if (!ready) return;
+    oled.clearDisplay();
+    oled.setTextSize(6);              // 30x42 px glyph — readable across a room
+    oled.setTextColor(SSD1306_WHITE);
+    oled.setCursor(49, 10);
+    oled.print(letter);
+    oled.display();
+}
+
 void display_clear() {
     if (!ready) return;
     oled.clearDisplay();

@@ -16,20 +16,21 @@ Built with PlatformIO. Framework: Arduino (simpler than ESP-IDF for this use cas
 
 | Task | How | Status |
 |---|---|---|
-| Receive direction + speed commands | UART from Raspberry Pi at 115200 baud | ✅ implemented |
+| Receive direction + speed commands | UART from Raspberry Pi at 115200 baud, non-blocking line parser | ✅ implemented |
 | Drive motors | PWM via ESP32 LEDC peripheral, 20kHz frequency | ✅ implemented |
 | Send telemetry to Pi | `STATUS` line at 10 Hz (vbat, distances, encoders, IMU) | ✅ implemented |
-| Control speed closed-loop | PID per motor side using encoder pulse counting | ⬜ next — encoders count, PID not wired in yet |
-| Read ultrasonic sensors | Timed pulse on trigger, measure echo pulse width, sequential only | ⚠️ reads work; 60ms anti-crosstalk gap not added yet |
-| Override Pi commands on obstacle | Priority layer — safety above navigation | ⬜ next — validated on Arduino stand-in, not yet ported |
-| Detect tip-over | Read MPU-6050 pitch angle over I2C | ⬜ next — IMU is read and reported, cutoff not wired in |
-| Watchdog | Stop motors if no command received in 500ms | ⬜ **next — NOT yet implemented; do not drive the robot unattended until this lands** |
-| ASL letter display | `ASL <letter>` line -> big letter on OLED | ⬜ next — works on Arduino stand-in, ESP32 parser ignores `ASL` lines |
+| Watchdog | Stop motors if no CMD received in 500ms | ✅ implemented — `apply_drive()` runs every loop pass |
+| Read ultrasonic sensors | One sensor per 60ms slot, round-robin (40kHz crosstalk guard), invalid-reading holdoff | ✅ implemented |
+| Override Pi commands on obstacle | Center < 25cm → stop; side < 30cm → veer away | ✅ implemented — needs on-robot tuning |
+| Detect tip-over | Gravity-vector tilt from MPU-6050; cut motors above 30° | ✅ implemented — clears when righted |
+| Boot-time UART flush + I2C bus recovery | Discard stale serial bytes; 9-clock SCL release before `Wire.begin` | ✅ implemented |
+| ASL letter display | `ASL <letter>` line → big letter on OLED for 2s | ✅ implemented |
+| Control speed closed-loop | PID per motor side using encoder pulse counting | ⬜ next — encoders count, PID loop lands after motors verified on PCB |
 
-> **Honest status note:** the modules all compile and the command/telemetry loop is real,
-> but the safety layer (watchdog, obstacle override, tilt cutoff, boot-time UART flush,
-> I2C bus recovery) is still bench-rig-only or unimplemented. These are the first items
-> to land once the PCB arrives — they are what makes the robot safe to run untethered.
+> **Status note:** everything above compiles and the safety chain
+> (tilt > watchdog > brake/coast > obstacle > Pi command) is in `main.cpp`, but none
+> of it has run on the real PCB yet. Thresholds (25cm/30cm/30°/500ms) will need
+> tuning during hardware bring-up.
 
 ---
 
@@ -158,19 +159,23 @@ void update_sensor(int idx, uint16_t raw_cm) {
 
 Use `last_valid[idx]` in the priority logic below, never raw readings.
 
-**Priority override (runs before applying Pi command):**
+**Priority override (runs before applying Pi command, implemented in `main.cpp` `apply_drive()`):**
 ```
-if front_center < 25cm:
-    execute ESCAPE sequence (back up 300ms, spin 90 degrees)
+if front_center < 25cm and moving forward:
+    stop (hold until path clears — Pi keeps sending commands, override wins)
 elif front_left < 30cm:
-    reduce left motor speed by 40%, boost right
+    slow the RIGHT side to 60% → robot veers right, away from the obstacle
 elif front_right < 30cm:
-    reduce right motor speed by 40%, boost left
+    slow the LEFT side to 60% → robot veers left, away from the obstacle
 else:
     apply Pi command normally
 ```
 
-The escape sequence is a fixed-time maneuver — it does not check sensors during execution. Simple and predictable.
+A differential-drive robot turns toward its **slower** side — so to veer away from
+an obstacle you slow the side **opposite** it. (An earlier draft of this pseudo-code
+had the sides swapped, which would have steered into the obstacle.) Reverse commands
+bypass the obstacle check so the robot can always back away. The back-up-and-spin
+escape sequence is a possible upgrade once the simple stop is proven on hardware.
 
 **Ultrasonic side blind spots:** The HC-SR04 has a ~15 degree cone angle. Objects that approach from a 45-75 degree angle (between the sensor cones) may not be detected until very close. The angled sensor placement mitigates this but does not eliminate it. Do not position the robot such that furniture is approaching from the sides — the sensors only protect the front.
 
@@ -341,8 +346,8 @@ firmware/esp32/
 | **DONE** | UART command parsing — robot responds to `CMD <left> <right> <flags>` |
 | **DONE** | Gesture stop tested on Arduino stand-in |
 | **DONE** | ASL letter display over UART tested on Arduino stand-in |
-| Next | PCB arrives — verify all modules on real ESP32 hardware |
+| **DONE** | Safety layer in ESP32 firmware — 500ms watchdog, obstacle override, tilt cutoff, sequential ultrasonic firing (60ms slots), UART boot flush, I2C bus recovery, `ASL` display handler |
+| Next | PCB arrives — verify all modules + safety thresholds on real ESP32 hardware |
 | Next | Encoders reading, PID loop running, robot drives straight |
-| Next | Ultrasonic obstacle avoidance working (sequential firing confirmed) |
-| Next | IMU tilt detection, full integration with Pi |
+| Next | IMU tilt threshold tuning, full integration with Pi |
 | Next | PID tuning, edge cases, demo readiness |
