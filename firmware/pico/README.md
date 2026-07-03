@@ -11,7 +11,7 @@ LED (and OLED, in `pico_main.py`).
 Reading USB serial (`sys.stdin`) in standalone mode (running as `main.py` on boot,
 MicroPico disconnected) is unreliable — see issue tracker. The **Arduino Uno is the
 current bench stand-in**. The Pico is expected to work properly on the final robot
-where the Pi 4 talks to it over the **hardware UART pins** (not USB).
+where the Pi 5 talks to it over the **hardware UART pins** (not USB).
 
 ## Setup
 

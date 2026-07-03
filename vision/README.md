@@ -393,6 +393,10 @@ vision/rpi/
 +-- tracker.py          # YOLOv8 pose + object detection wrapper
 +-- controller.py       # bbox -> CMD <left> <right> <flags> + gesture state machine
 +-- uart.py             # serial link to ESP32 (CMD out, STATUS in)
++-- gamepad.py          # Xbox controller -> manual drive (--manual flag, A toggles AUTO)
++-- gamepad_test.py     # standalone controller axis/button mapping tester
++-- test_link.py        # serial link smoke test
++-- webcam_stream.py    # phone/laptop camera streaming helper
 +-- asl_features.py     # canonical scale-invariant hand features (train + infer)
 +-- asl_from_dataset.py # train ASL model from the Kaggle ASL Alphabet dataset
 +-- asl_collect.py      # alt: collect your own ASL samples from webcam
@@ -419,7 +423,7 @@ Planned (companion features, not yet implemented):
 | Inference FPS | 10+ FPS |
 | Latency per frame | < 100ms |
 | Minimum confidence to track | 0.5 |
-| Dead zone | 0.15 (+/-15% of frame center) |
+| Dead zone | 0.1 (+/-10% of frame center, per `controller.py`) |
 | Max comfortable follow distance | ~3 meters |
 
 If FPS drops below 8, reduce input size: `model(frame, imgsz=224)` instead of 320.

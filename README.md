@@ -44,7 +44,7 @@ A Raspberry Pi 5 runs YOLOv8 pose estimation on a live camera feed, detects the 
 
 **Gesture control:** YOLOv8 tracks 17 body keypoints per person. When either wrist keypoint rises above the shoulder keypoint in frame coordinates, the Pi switches to STOP mode and holds it for 5 consecutive frames before acting — this debounces the detection and prevents flickering. Lowering the hand for 5 consecutive frames resumes following. Stop gesture confirmed working in testing.
 
-**Sign language recognition:** The camera detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART to the ESP32 and displayed live on the onboard OLED display. Initial testing on Pi 5 shows strong results for most letters — broader testing across different hands, lighting, and environments is still in progress.
+**Sign language recognition:** The camera detects ASL hand signs in real time using MediaPipe hand landmarks and a trained classifier. Recognized letters are sent over UART and displayed live on the OLED (currently running on the Arduino bench rig; the ESP32 firmware port of the `ASL` message handler is next). Initial testing on Pi 5 shows strong results for most letters — broader testing across different hands, lighting, and environments is still in progress.
 
 **Obstacle avoidance:** Three HC-SR04 ultrasonic sensors (front-left at -30 degrees, front-center, front-right at +30 degrees) feed into a priority layer in ESP32 firmware. The Pi handles direction. The ESP32 handles not hitting things. These are separate concerns and intentionally kept that way.
 
@@ -153,23 +153,25 @@ Philo/
 │           ├── *.gm1                 # Board outline
 │           └── *.drl                 # Drill files
 ├── firmware/
-│   └── esp32/
-│       ├── platformio.ini            # PlatformIO config (espressif32 6.9.0)
-│       └── src/
-│           ├── main.cpp              # Entry point — 10 Hz sensor + Pi loop
-│           ├── pins.h                # All GPIO assignments (verified from netlist)
-│           ├── motors.h / .cpp       # TB6612FNG H-bridge control (PWM via LEDC)
-│           ├── encoders.h / .cpp     # Interrupt-based wheel encoder counting
-│           ├── ultrasonic.h / .cpp   # HC-SR04 distance (L / C / R)
-│           ├── imu.h / .cpp          # MPU-6050 over I²C (accel + gyro)
-│           ├── display.h / .cpp      # SSD1306 OLED status display
-│           └── pi_comm.h / .cpp      # UART text protocol to Raspberry Pi
+│   ├── esp32/
+│   │   ├── platformio.ini            # PlatformIO config (espressif32 6.9.0)
+│   │   └── src/
+│   │       ├── main.cpp              # Entry point — 10 Hz sensor + Pi loop
+│   │       ├── pins.h                # All GPIO assignments (verified from netlist)
+│   │       ├── motors.h / .cpp       # TB6612FNG H-bridge control (PWM via LEDC)
+│   │       ├── encoders.h / .cpp     # Interrupt-based wheel encoder counting
+│   │       ├── ultrasonic.h / .cpp   # HC-SR04 distance (L / C / R)
+│   │       ├── imu.h / .cpp          # MPU-6050 over I²C (accel + gyro)
+│   │       ├── display.h / .cpp      # SSD1306 OLED status display
+│   │       └── pi_comm.h / .cpp      # UART text protocol to Raspberry Pi
+│   ├── arduino/                      # Uno bench-test sketches (ESP32 stand-in)
+│   └── pico/                         # Pico MicroPython bench tests (experimental)
 ├── mechanical/
 │   ├── Philo- main.step              # 3D board export
 │   ├── fusion360/                    # Chassis CAD source files
 │   └── stl/                         # Print-ready STL files
 ├── vision/
-│   └── rpi/                         # YOLOv8 inference + gesture detection (Python)
+│   └── rpi/                         # YOLOv8 + gesture + ASL + Xbox manual drive (Python)
 └── docs/
     ├── images/                       # Photos, renders, wiring diagrams
     └── PRE_BUILD_LOCK.md             # Design freeze checklist

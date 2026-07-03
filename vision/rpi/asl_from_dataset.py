@@ -1,4 +1,4 @@
-"""
+r"""
 Train ASL model from the Kaggle ASL Alphabet dataset.
 Usage: python asl_from_dataset.py --dataset "X:\Philo training"
 Saves asl_model.pkl in the same folder — drop-in replacement for the hand-collected model.

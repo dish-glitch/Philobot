@@ -14,15 +14,22 @@ Built with PlatformIO. Framework: Arduino (simpler than ESP-IDF for this use cas
 
 ## Responsibilities
 
-| Task | How |
-|---|---|
-| Receive direction + speed commands | UART from Raspberry Pi at 115200 baud |
-| Drive motors | PWM via ESP32 LEDC peripheral, 20kHz frequency |
-| Control speed closed-loop | PID per motor side using encoder pulse counting |
-| Read ultrasonic sensors | Timed pulse on trigger, measure echo pulse width, sequential only |
-| Override Pi commands on obstacle | Priority layer — safety above navigation |
-| Detect tip-over | Read MPU-6050 pitch angle over I2C |
-| Watchdog | Stop motors if no command received in 500ms |
+| Task | How | Status |
+|---|---|---|
+| Receive direction + speed commands | UART from Raspberry Pi at 115200 baud | ✅ implemented |
+| Drive motors | PWM via ESP32 LEDC peripheral, 20kHz frequency | ✅ implemented |
+| Send telemetry to Pi | `STATUS` line at 10 Hz (vbat, distances, encoders, IMU) | ✅ implemented |
+| Control speed closed-loop | PID per motor side using encoder pulse counting | ⬜ next — encoders count, PID not wired in yet |
+| Read ultrasonic sensors | Timed pulse on trigger, measure echo pulse width, sequential only | ⚠️ reads work; 60ms anti-crosstalk gap not added yet |
+| Override Pi commands on obstacle | Priority layer — safety above navigation | ⬜ next — validated on Arduino stand-in, not yet ported |
+| Detect tip-over | Read MPU-6050 pitch angle over I2C | ⬜ next — IMU is read and reported, cutoff not wired in |
+| Watchdog | Stop motors if no command received in 500ms | ⬜ **next — NOT yet implemented; do not drive the robot unattended until this lands** |
+| ASL letter display | `ASL <letter>` line -> big letter on OLED | ⬜ next — works on Arduino stand-in, ESP32 parser ignores `ASL` lines |
+
+> **Honest status note:** the modules all compile and the command/telemetry loop is real,
+> but the safety layer (watchdog, obstacle override, tilt cutoff, boot-time UART flush,
+> I2C bus recovery) is still bench-rig-only or unimplemented. These are the first items
+> to land once the PCB arrives — they are what makes the robot safe to run untethered.
 
 ---
 

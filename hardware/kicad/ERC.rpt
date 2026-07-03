@@ -1,49 +1,5 @@
-ERC report (2026-06-17T15:53:39-0500, Encoding UTF8)
+ERC report (2026-07-02T23:21:54-0500, Encoding UTF8)
 
 ***** Sheet /
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4050 mils): Label 'ECHO_L'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4150 mils): Label 'TRIG_C'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4350 mils): Label 'TRIG_R'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4650 mils): Label 'ESP_RX'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4750 mils): Label 'ESP_TX'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4850 mils): Label 'ECHO_C'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 4950 mils): Label 'TRIG_L'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 5050 mils): Label 'SDA'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 5150 mils): Label 'SCL'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 5250 mils): Label 'ECHO_R'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 5850 mils): Label 'ENC_L'
-[label_dangling]: Label not connected to anything
-    ; error
-    @(10100 mils, 5950 mils): Label 'ENC_R'
 
-***** Sheet /Combined/
-[pin_not_driven]: Input pin not driven by any Output pins
-    ; error
-    @(10100 mils, 5850 mils): Symbol U8 Pin 6 [IO34, Input, Line]
-[pin_not_driven]: Input pin not driven by any Output pins
-    ; error
-    @(10100 mils, 5950 mils): Symbol U8 Pin 7 [IO35, Input, Line]
-
- ** ERC messages: 14  Errors 14  Warnings 0
+ ** ERC messages: 0  Errors 0  Warnings 0

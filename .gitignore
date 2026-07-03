@@ -29,10 +29,7 @@ asl_data.csv    # generated training data dump
 
 # ── PlatformIO build output ───────────────────────────────────────────────────
 .pio/
-firmware/esp32/.vscode/.browse.c_cpp.db*
-firmware/esp32/.vscode/c_cpp_properties.json
-firmware/esp32/.vscode/launch.json
-firmware/esp32/.vscode/ipch
+firmware/esp32/.vscode/
 
 # ── OS junk ───────────────────────────────────────────────────────────────────
 .DS_Store
