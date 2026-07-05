@@ -174,7 +174,8 @@ Philo/
 │   └── rpi/                         # YOLOv8 + gesture + ASL + Xbox manual drive (Python)
 └── docs/
     ├── images/                       # Photos, renders, wiring diagrams
-    └── PRE_BUILD_LOCK.md             # Design freeze checklist
+    ├── PRE_BUILD_LOCK.md             # Design freeze checklist
+    └── RESEARCH.md                   # Reference robots, papers, and datasheets used
 ```
 
 ---
@@ -259,7 +260,7 @@ We used Claude (Anthropic) as a reference tool during this project and are discl
 - The chassis design in Fusion 360 — built by our mechanical lead from scratch
 - Every journal entry — written by the team in our own words
 
-We are happy to answer questions about any part of this project. We have used AI to help build it, but we understand everything we built. If AI helped create any line of code or suggested a part that seemed better, we did the research to understand what that part or code does and why — before it went into the project.
+We are happy to answer questions about any part of this project. We have used AI to help build it, but we understand everything we built. If AI helped create any line of code or suggested a part that seemed better, we did the research to understand what that part or code does and why — before it went into the project. The reference robots, papers, and datasheets we used to back up those decisions are collected in [`docs/RESEARCH.md`](docs/RESEARCH.md).
 
 ---
 
