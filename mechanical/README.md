@@ -1,6 +1,6 @@
 # Mechanical — Philo Chassis
 
-**Owner: [@hummos430](https://github.com/hummos430)**
+**Owner: [@hummos430](https://github.com/hummos430) [@ezan13](https://github.com/ezan13)         **
 
 ---
 
