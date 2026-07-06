@@ -18,9 +18,14 @@ obstacle override). Measured 2026-06.
 | Full stack + ASL (YOLOv8n-pose **+** MediaPipe hands per frame) | **~7–11 FPS** | `main.py` FPS counter |
 | Object-labeling model added (YOLOv8s @ `imgsz=640`) | **~0.3 FPS** | inferred from ~15 s gesture lag; why the object model is **off by default** on the Pi |
 | Gesture-stop response latency | **~0.35 s** | 5-frame confirmation ÷ 14 FPS |
-| ASL recognition confidence (distinct letters B, C, U, N) | **0.94 – 1.00** | live softmax probability on the Pi |
-| ASL training set | **11,742 samples** (13,000 dataset images; 1,258 with no detectable hand skipped) | `asl_from_dataset.py` |
-| ASL training convergence | loss **1.63 → 0.0016** in 74 iterations | MLPClassifier, early-stop on plateau |
+| **ASL classifier — held-out test accuracy** | **99.0%** (26 classes; stratified 80/20 split, 2,349 unseen test samples) | `asl_from_dataset.py --csv asl_features.csv --eval` |
+| ASL training set | **11,742 samples** (13,000 dataset images; 1,258 with no detectable hand skipped) | Kaggle ASL Alphabet dataset |
+| ASL model | MediaPipe hand landmarks → scale-invariant features → scikit-learn MLP (256×128) | landmark-based (runs in real time on the Pi) |
+| ASL live confidence (distinct letters) | **0.94 – 1.00** | live softmax probability on the Pi (per-hand) |
+
+> Note: 99.0% is the held-out test accuracy on the Kaggle dataset (same distribution).
+> Live webcam accuracy on a new user runs lower (distribution shift; C/O are naturally
+> similar handshapes) — distinct letters are reliable, near-identical pairs less so.
 | Pi → Arduino link | **115200 baud**, `STATUS` telemetry at **10 Hz** | protocol, verified live |
 | Obstacle override threshold | **20 cm** (LED + OLED "STOP" fire within threshold, independent of camera) | firmware + live bench test |
 
