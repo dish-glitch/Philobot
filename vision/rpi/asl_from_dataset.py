@@ -1,4 +1,4 @@
-r"""
+"""
 Train ASL model from the Kaggle ASL Alphabet dataset.
 Usage: python asl_from_dataset.py --dataset "X:\Philo training"
 Saves asl_model.pkl in the same folder — drop-in replacement for the hand-collected model.
@@ -141,30 +141,55 @@ def extract_from_dataset(dataset_root, samples):
     return X, y
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", help="Extract from image dataset, save features CSV, and train")
-    parser.add_argument("--csv",     help="Train from a pre-extracted features CSV (no images needed)")
-    parser.add_argument("--samples", type=int, default=SAMPLES_PER_CLASS)
-    args = parser.parse_args()
+def evaluate(X, y):
+    """Report held-out test accuracy with a stratified 80/20 split (measured, not training loss)."""
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score, classification_report
 
+    n_classes = len(set(y))
+    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+    print(f"Train {len(Xtr):,} / held-out test {len(Xte):,}  ({n_classes} classes)")
+    clf = MLPClassifier(hidden_layer_sizes=(256, 128), max_iter=500, random_state=42)
+    clf.fit(Xtr, ytr)
+    pred = clf.predict(Xte)
+    acc = accuracy_score(yte, pred)
+    print(f"\n>>> Held-out test accuracy: {acc * 100:.2f}%  "
+          f"({len(Xte):,} test samples across {n_classes} classes)\n")
+    print(classification_report(yte, pred, zero_division=0))
+
+
+def load_data(args):
     if args.csv:
-        # Train-only: load version-independent features and build the model in THIS env.
         print(f"Loading features from {args.csv} ...")
         X, y = load_features_csv(args.csv)
         print(f"Loaded {len(X):,} samples.")
-        train_and_save(X, y)
-        return
-
+        return X, y
     if not args.dataset:
-        print("Give --dataset <path> (extract images + train) OR --csv <file> (train from features).")
+        return None, None
+    X, y = extract_from_dataset(args.dataset, args.samples)
+    if X:
+        save_features_csv(X, y, FEATURES_CSV)   # portable features — reuse to retrain/eval anywhere
+    return X, y
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", help="Extract from image dataset, save features CSV, and train")
+    parser.add_argument("--csv",     help="Use a pre-extracted features CSV (no images needed)")
+    parser.add_argument("--samples", type=int, default=SAMPLES_PER_CLASS)
+    parser.add_argument("--eval",    action="store_true",
+                        help="report held-out test accuracy (80/20 split) instead of saving a model")
+    args = parser.parse_args()
+
+    X, y = load_data(args)
+    if not X:
+        print("Give --dataset <path> (extract images) OR --csv <file> (use saved features).")
         return
 
-    X, y = extract_from_dataset(args.dataset, args.samples)
-    if not X:
-        return
-    save_features_csv(X, y, FEATURES_CSV)   # portable features — copy this to another machine to retrain
-    train_and_save(X, y)
+    if args.eval:
+        evaluate(X, y)
+    else:
+        train_and_save(X, y)
 
 
 if __name__ == "__main__":
