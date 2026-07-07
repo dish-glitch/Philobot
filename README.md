@@ -30,14 +30,6 @@
 
 ---
 
-## Why We Built This
-
-Most robotics projects you see online are either a pre-built kit with a tutorial, or a graduate research platform that costs $10,000 and runs ROS on a laptop strapped to a frame. We wanted the middle ground — a robot that does something real and visually impressive, built from scratch at the hardware level, for under $200.
-
-The follow-a-person problem is deceptively hard. The camera has to detect a human, figure out where they are relative to the robot, translate that into motor commands, keep the robot from walking into walls, and do all of it fast enough that the robot does not lag behind.
-
----
-
 ## What It Does
 
 A Raspberry Pi 5 runs YOLOv8 pose estimation on a live camera feed, detects the nearest person in frame, and continuously streams direction and speed commands to an ESP32 over UART. The ESP32 runs closed-loop PID speed control on four DC motors via dual H-bridge drivers. Three ultrasonic sensors on the front of the chassis act as an independent safety layer — if an obstacle is detected under 25cm, the ESP32 overrides the Pi command and stops regardless of what the vision stack says.
