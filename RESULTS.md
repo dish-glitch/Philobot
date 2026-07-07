@@ -10,7 +10,7 @@ reproducible with [`vision/rpi/benchmark.py`](vision/rpi/benchmark.py).
 
 Bench setup: Pi 5 runs the vision/control stack (Python 3.12), USB webcam as the
 camera, Arduino Uno standing in for the ESP32 (drives LEDs + OLED + ultrasonic
-obstacle override). Measured 2026-06.
+obstacle override). Measured 2026-06. The Arduino Uno was used as a temporary hardware interface because the custom PCB and ESP32 controller were being ordered. 
 
 | Metric | Measured | Method |
 |---|---|---|
