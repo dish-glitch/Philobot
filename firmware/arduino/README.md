@@ -9,16 +9,16 @@ Reads the laptop's serial protocol, drives the dashboard, and runs an obstacle
 safety override on its own ultrasonic sensor, serving as the ESP32 while the PCB is unavailable.
 
 - **`CMD <left> <right> <flags>`**
-  - follow LED (D6) on when moving, off when stopped
+  - follow LED: D6 lights when moving, turns off when stopped
   - turn LEDs: D7 lights when steering left, D8 when steering right
-  - OLED shows `FOLLOW`/`STOPPED`/`OBSTACLE`, direction, and live distance
+  - OLED: shows `FOLLOW`/`STOPPED`/`OBSTACLE`, direction, and live distance
 - **`ASL <LETTER>`** — flashes the big letter on the OLED for 2s
 - **Obstacle override** — reads its own HC-SR04; if something is closer than
-  `OBSTACLE_CM` (20cm) it forces STOP regardless of the camera command. Safety
+  `OBSTACLE_CM` (20cm), forces STOP regardless of the camera command. Safety
   does not depend on the laptop or the link staying alive.
 - **Telemetry** — sends `STATUS <vbat> <dl> <dc> <dr> <el> <er> <ax> <ay> <az> <gz>`
   back at 10Hz (single ultrasonic reported as `dc`). The laptop shows the
-  distance + an override warning in the video window, so data flows both ways.
+  distance and an override warning in the video window, so data flows both ways.
 
 ### Wiring
 ```
@@ -33,7 +33,7 @@ Upload at 115200, close the Arduino Serial Monitor, then run the vision stack
 pointed at the Uno's port: `python main.py --webcam --serial COM8`
 
 > The MPU-6050 tip-over override is not in this sketch yet — reading the MPU over
-> I2C with no timeout can hang the loop if the connection is flaky. Add it back
+I2C without a timeout can hang the loop if the connection is flaky. It will be added back
 > once the bus is rock-solid.
 
 ## Bench test sketches (sensor bring-up, run individually)
@@ -54,4 +54,4 @@ pointed at the Uno's port: `python main.py --webcam --serial COM8`
 - Adafruit MPU6050, Adafruit Unified Sensor (for the MPU sketches)
 
 > Note: HC-SR04 echo connects straight to the 5V Uno here. On the real 3.3V
-> ESP32 board the echo line goes through a voltage divider (see hardware BOM).
+> ESP32 board, the echo line goes through a voltage divider (see hardware BOM).
