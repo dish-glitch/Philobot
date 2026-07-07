@@ -6,9 +6,9 @@
 
 ## Overview
 
-The ESP32 firmware handles everything physical — spinning motors, reading encoders, polling ultrasonic sensors, and listening for commands from the Raspberry Pi. It does not know about people or cameras. It just moves wheels and avoids walls.
+The ESP32 firmware handles everything physical — spinning motors, reading encoders, polling ultrasonic sensors, and listening for commands from the Raspberry Pi. It does not register people or cameras. It just moves the bot and avoids walls.
 
-Built with PlatformIO. Framework: Arduino (simpler than ESP-IDF for this use case, sufficient for our timing requirements).
+Built with PlatformIO. Framework: Arduino (easier to use as we already one which saved us from needing to acquire an ESP-IDF).
 
 ---
 
