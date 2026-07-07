@@ -384,21 +384,21 @@ Run full YOLO stack on Pi while robot follows. Watch Pi temperature (vcgencmd me
 - [x] ERC clean — 0 errors
 
 **Layout (COMPLETE — DRC clean, Gerbers exported):**
-- [ ] Ground plane poured on bottom copper layer, net = GND
-- [ ] Stitching vias every 10mm across board area
-- [ ] Single star ground entry at XT30 negative terminal
-- [ ] TB6612FNG exposed thermal pad connected to GND copper pour (NOT floating) — verify in KiCad footprint properties
-- [ ] D24V50F5 module footprint matches Pololu pin layout; GND pads to ground pour
-- [ ] 470uF bulk caps within 3mm of each TB6612FNG VM pin
-- [ ] 1000uF cap within 5mm of D24V50F5 output pin
-- [ ] All 100nF decoupling caps within 2mm of IC power pins
-- [ ] TB6612FNG placed adjacent to motor output connectors
-- [ ] Motor output traces >= 1.2mm
-- [ ] VBAT traces >= 2.5mm
-- [ ] 5V RPi traces >= 1.5mm
-- [ ] Encoder traces routed away from motor traces (opposite PCB side preferred)
-- [ ] Polarity marked on motor connectors in silkscreen
-- [ ] Board outline matches dimensions given to mechanical team
+- [X] Ground plane poured on bottom copper layer, net = GND
+- [X] Stitching vias every 10mm across board area
+- [X] Single star ground entry at XT30 negative terminal
+- [X] TB6612FNG exposed thermal pad connected to GND copper pour (NOT floating) — verify in KiCad footprint properties
+- [X] D24V50F5 module footprint matches Pololu pin layout; GND pads to ground pour
+- [X] 470uF bulk caps within 3mm of each TB6612FNG VM pin
+- [X] 1000uF cap within 5mm of D24V50F5 output pin
+- [X] All 100nF decoupling caps within 2mm of IC power pins
+- [X] TB6612FNG placed adjacent to motor output connectors
+- [X] Motor output traces >= 1.2mm
+- [X] VBAT traces >= 2.5mm
+- [X] 5V RPi traces >= 1.5mm
+- [X] Encoder traces routed away from motor traces (opposite PCB side preferred)
+- [X] Polarity marked on motor connectors in silkscreen
+- [X] Board outline matches dimensions given to mechanical team
 - [x] DRC clean — zero errors
 - [x] Gerbers exported and verified in viewer
 
