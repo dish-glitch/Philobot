@@ -5,8 +5,8 @@ ESP32 PCB exists. The Uno stands in for the ESP32.
 
 ## `arduino_philo.ino` — the ESP32 stand-in (receiver + safety layer)
 
-Reads the laptop's serial protocol, drives the dashboard, AND runs an obstacle
-safety override on its own ultrasonic — mirroring the real ESP32's priority layer.
+Reads the laptop's serial protocol, drives the dashboard, and runs an obstacle
+safety override on its own ultrasonic sensor, serving as the ESP32 while the PCB is unavailable.
 
 - **`CMD <left> <right> <flags>`**
   - follow LED (D6) on when moving, off when stopped
