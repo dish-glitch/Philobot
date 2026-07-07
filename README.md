@@ -137,7 +137,7 @@ Philo/
 ├── hardware/
 │   └── kicad/
 │       ├── Philo.kicad_sch           # Schematic (ESP32, motors, power, sensors)
-│       ├── Philo- main.kicad_pcb     # PCB layout — 100×100mm 2-layer
+│       ├── Philo- main.kicad_pcb     # PCB layout — 116×116mm 2-layer, 4x M3 mounting holes
 │       └── gerbers/                  # Production files ready for JLCPCB
 │           ├── *.gtl / *.gbl         # Front / back copper
 │           ├── *.gts / *.gbs         # Solder mask

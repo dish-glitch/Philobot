@@ -33,7 +33,8 @@ So the honest situation: **with these motors, 2S is correct and 0.52 m/s is your
 
 ### A3 — PCB outer dimensions and mounting hole positions
 **Why frozen:** The chassis plate is designed with cutouts and standoff holes that match the board exactly. The board outline in KiCad must match the dimensions handed to hummos430. If the board grows by 5mm after the chassis is printed, it won't fit.
-**Confirm before freeze:** Hardware team and hummos430 sign off on a single agreed board outline drawing with M3 standoff hole coordinates.
+**Locked:** Board grew from the original 100×100mm to **116×116mm** to make room for 4x real M3 mounting holes (the original layout had no board-edge clearance for them). Hole coordinates are in `mechanical/README.md` section "1. Main Chassis Plate." DRC and ERC both verified clean (0 errors) after the resize.
+**Confirm before freeze:** Hardware team and hummos430 sign off that the chassis plate is designed against 116×116mm and the exact hole coordinates in `mechanical/README.md`, not the old 100×100mm figure.
 
 ### A4 — ESP32 GPIO pin assignments
 **Why frozen:** Once the PCB is routed, the pins are physically wired. The firmware adapts to the board, not the other way around. We already resolved the GPIO 21/22 double-assignment conflict (I2C vs ultrasonic). That fix is locked.

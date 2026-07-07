@@ -171,7 +171,16 @@ Flat structural base. Everything mounts here.
 
 Required features:
 - 4x motor pocket cutouts or brackets (one per corner)
-- 4x M3 through-holes for PCB standoffs — **get these positions from the hardware team before printing. Do not estimate.**
+- 4x M3 through-holes for PCB standoffs. Board is **116mm × 116mm**. Hole centers, measured from the PCB's own top-left corner (X right, Y down, matching the KiCad board outline origin):
+
+  | Hole | X (mm) | Y (mm) |
+  |---|---|---|
+  | A | 6.68 | 6.42 |
+  | B | 109.76 | 6.02 |
+  | C | 5.52 | 110.14 |
+  | D | 109.34 | 109.53 |
+
+  Holes are hand-placed near each corner, not a perfect symmetric grid — use these exact coordinates, not an estimated pattern.
 - 4x M2.5 through-holes for Raspberry Pi — 58mm x 49mm hole pattern (official Pi spec, not approximate)
 - Battery bay: 90mm x 36mm x 22mm minimum clearance for a soft-pack 2200mAh LiPo. Add a strap mount or lip to hold the battery in during sharp turns.
 - 3x sensor cutouts or pockets on front face for HC-SR04 (body size 45mm x 20mm x 15mm per sensor). One center, one angled left 30 degrees, one angled right 30 degrees.

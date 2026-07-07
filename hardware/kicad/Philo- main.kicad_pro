@@ -559,7 +559,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "hardware/kicad/borh/",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "Philo- main.step",
