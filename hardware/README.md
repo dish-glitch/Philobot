@@ -5,21 +5,20 @@
 ---
 
 ## Overview
+The PCB as designed as the main interface for philo, it distrubutes the power and connects the raspberry Pi and ESP32. It drives the motors, and provides connectors for the sensors used throughout the robot. 
 
-The PCB is the central hub of Philo. Everything connects here — motors, sensors, battery, Raspberry Pi, ESP32 firmware. Designed in KiCad, fabricated at JLCPCB (5-board run, ~10 day lead time including shipping).
-
-**Current phase: PCB fabrication.** Schematic complete (0 ERC errors), PCB layout complete (DRC clean, Gerbers exported). Ready to order from JLCPCB. KiCad files are in [`hardware/kicad/`](kicad/).
+**Current phase: PCB fabrication.** Schematic complete (0 ERC errors), PCB layout complete (DRC clean, Gerbers exported). Kicad files: [`hardware/kicad/`](kicad/).
 
 **For the actual build, start here:**
-- **[BOM.md](BOM.md)** — complete parts list (every IC, module, passive, connector) — updated to match annotated schematic ref designators
-- **[SCHEMATIC.md](SCHEMATIC.md)** — net-by-net schematic build plan (completed, for reference)
-- **[../PRE_BUILD_LOCK.md](../PRE_BUILD_LOCK.md)** — what's frozen before the board order
+- **[BOM.md](BOM.md)** — complete parts list 
+- **[SCHEMATIC.md](SCHEMATIC.md)** — completed, for reference
+
 
 ---
 
 ## Component Specifications (Verified from Datasheets)
 
-Every part below has been cross-referenced against its datasheet or product page. Do not substitute components without checking if the replacement meets the same electrical requirements.
+The components below are the parts selected for the current revision of the PCB. Main componets are here incase of debugging. 
 
 | Component | Key Specs | Source | Weight |
 |---|---|---|---|
