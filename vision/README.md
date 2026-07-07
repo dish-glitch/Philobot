@@ -1,6 +1,6 @@
 # Vision — Philo Raspberry Pi Stack
 
-**Owner: [@sivathamizhan](https://github.com/sivathamizhan)&[@dish-glitch](https://github.com/dish-glitch**
+**Owner: [@sivathamizhan](https://github.com/sivathamizhan) & [@dish-glitch](https://github.com/dish-glitch)**
 
 ---
 
