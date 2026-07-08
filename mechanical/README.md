@@ -229,7 +229,12 @@ At 1.5m, the camera sees from knee height to above the head — wrists and shoul
 Secure the CSI ribbon cable with a cable clip within 20mm of each connector — prevents the ribbon from pulling on connectors when the robot turns.
 
 ### 5. Ultrasonic Sensor Mounts
-Three HC-SR04 sensors on the front face. One centered (pointing straight ahead), one angled 30 degrees left, one angled 30 degrees right. Body size: 45mm x 20mm x 15mm. Leave room for the connector to plug in from above.
+Three HC-SR04 sensors on the front face. 
+To determine what angle to place the side sensors, we used the following equation
+Width = 2* Distance * tan (theta/2). 
+Since the HC-SR04 has a beam angle of 15deg, at 1m away, the detection width of one sensor is about 0.26m. At 4m away, the detection width of one sensor is about 1.05m. 
+
+Based on this information, we finalized with the following sensor positions: one centered (pointing straight ahead), one angled 15 degrees left, and one angled 15 degrees right. Body size: 45mm x 20mm x 15mm. Leave room for the connector to plug in from above.
 
 ### 6. Top Cover (Low Priority — Week 7+)
 Cosmetic only. Design after all mechanical integration is verified.
