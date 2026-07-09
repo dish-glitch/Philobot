@@ -112,7 +112,7 @@ A Raspberry Pi 5 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | Raspberry Pi 5 (4GB) | Vision compute | 1 | on hand | From friend — with active cooler |
 | Raspberry Pi Camera Module 3 | 12MP, autofocus | 1 | on hand | Attached, confirmed working |
 | AMS1117-3.3 LDO | 3.3V rail for ESP32 logic | 1 | ~$1 | DigiKey |
-| Pololu D24V50F5 Buck (5V 5A) | 5V rail for Raspberry Pi | 1 | ~$15 | Pololu |
+| Pololu D24V50F5 Buck (5V 5A) | 5V rail for Raspberry Pi | 1 | ~$30 | [Pololu](https://www.pololu.com/product/2851) |
 | Littelfuse RGEF700 Polyfuse 7A | Battery overcurrent protection | 1 | ~$2 | DigiKey |
 | AOD4185 P-channel MOSFET | Reverse polarity protection | 1 | ~$1 | DigiKey |
 | Status LED (any 5mm) | Boot/status indicator | 1 | ~$1 | Amazon |
@@ -126,7 +126,7 @@ A Raspberry Pi 5 runs YOLOv8 pose estimation on a live camera feed, detects the 
 | Custom PCB — JLCPCB (5 boards) | From Gerbers | 1 run | ~$25 | [JLCPCB](https://jlcpcb.com) |
 | PETG-CF Filament | Chassis | — | $0 | On hand |
 | M2.5 / M3 Standoffs + Screws | Mounting hardware | — | ~$8 | Amazon |
-| **Total** | | | **~$200** | |
+| **Total** | | | **~$215** | |
 
 ---
 
