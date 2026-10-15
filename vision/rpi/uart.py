@@ -6,20 +6,25 @@ class ESP32Serial:
     def __init__(self, port="/dev/serial0", baud=115200):
         self.ser = serial.Serial(port, baud, timeout=0.1)
         self.latest_status = None
+        self.ack_count = 0    # CMDs the ESP32 confirmed (bench firmware echoes "ACK l r f")
+        self.last_sent = None
         self._lock = threading.Lock()
         t = threading.Thread(target=self._read_loop, daemon=True)
         t.start()
 
     def send_cmd(self, left: int, right: int, flags: int = 0):
         msg = f"CMD {left} {right} {flags}\n"
+        self.last_sent = (left, right, flags)
         with self._lock:
             self.ser.write(msg.encode())
 
     def _read_loop(self):
         while True:
             try:
-                line = self.ser.readline().decode().strip()
-                if line.startswith("STATUS"):
+                line = self.ser.readline().decode(errors="ignore").strip()
+                if line.startswith("ACK"):
+                    self.ack_count += 1
+                elif line.startswith("STATUS"):
                     parts = line.split()
                     if len(parts) == 11:
                         keys = ["vbat", "dl", "dc", "dr", "el", "er", "ax", "ay", "az", "gz"]

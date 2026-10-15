@@ -162,6 +162,10 @@ def main():
     parser.add_argument("--no-display", action="store_true")
     parser.add_argument("--objects",    action="store_true",
                         help="also run object-labeling model (heavy — laptop only, off on Pi)")
+    parser.add_argument("--min-speed",  type=int, default=None,
+                        help="slowest wheel speed when following (0-255); raise it if the motors only hum")
+    parser.add_argument("--max-speed",  type=int, default=None,
+                        help="fastest wheel speed when following (0-255)")
     parser.add_argument("--manual",     action="store_true",
                         help="enable Xbox controller; A button toggles AUTO (follow) / MANUAL (drive)")
     args = parser.parse_args()
@@ -200,7 +204,7 @@ def main():
 
     cap     = open_camera(args.webcam, args.source)
     tracker = PoseTracker(enable_objects=args.objects)
-    ctrl    = PhiloController()
+    ctrl    = PhiloController(min_speed=args.min_speed, max_speed=args.max_speed)
 
     # Optional Xbox-controller manual drive
     gamepad = None
@@ -237,7 +241,12 @@ def main():
             # FPS readout every ~3s
             fps_n += 1
             if time.time() - fps_t0 >= 3.0:
-                print(f"FPS: {fps_n / (time.time() - fps_t0):.1f}")
+                line = f"FPS: {fps_n / (time.time() - fps_t0):.1f}"
+                if uart:
+                    # ESP32 ACKs = commands it actually received (bench firmware only)
+                    line += f" | sent CMD {uart.last_sent} | ESP32 ACKs: {uart.ack_count}"
+                    uart.ack_count = 0
+                print(line)
                 fps_t0, fps_n = time.time(), 0
 
             # ── controller poll + mode toggle ──
@@ -264,7 +273,8 @@ def main():
                     if stopped:
                         uart.send_cmd(0, 0, 0)
                     else:
-                        l, r, f = ctrl.compute_cmd(bbox, FRAME_W)
+                        h, w = frame.shape[:2]
+                        l, r, f = ctrl.compute_cmd(bbox, w, h)
                         uart.send_cmd(l, r, f)
 
                 # ── ASL (every ASL_SKIP frames) ──

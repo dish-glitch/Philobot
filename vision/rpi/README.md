@@ -66,7 +66,7 @@ python main.py --webcam --serial COM8
 ```
 
 **Flags:** `--webcam` (USB/laptop cam) · `--source URL|index` (network/other camera) ·
-`--serial PORT` · `--manual` (Xbox controller) · `--objects` (object labels, laptop) ·
+`--serial PORT` · `--min-speed N` / `--max-speed N` (follow speed 0-255; raise min if motors only hum) · `--manual` (Xbox controller) · `--objects` (object labels, laptop) ·
 `--no-display` (headless).
 
 ## Environments (Raspberry Pi 5)

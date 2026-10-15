@@ -1,14 +1,20 @@
 class PhiloController:
     MAX_SPEED = 200   # tune to your ESP32 PWM range
-    MIN_SPEED = 60    # minimum to overcome motor stiction
+    MIN_SPEED = 120   # minimum to overcome motor stiction (60 only hummed at 5 V)
     GESTURE_FRAMES = 5
     DEAD_ZONE = 0.1   # fraction of frame width, no steering in this band
 
-    # Bounding box area thresholds at imgsz=320 — bigger = closer
-    NEAR_AREA = 12000
-    FAR_AREA  = 3000
+    # Person-box area as a fraction of the whole frame — bigger = closer.
+    # YOLO returns boxes in original-frame pixels (not imgsz), so a fraction
+    # works for any camera resolution.
+    NEAR_FRAC = 0.45  # ~1 m away → slowest
+    FAR_FRAC  = 0.10  # ~3 m away → fastest
 
-    def __init__(self):
+    def __init__(self, min_speed=None, max_speed=None):
+        if min_speed is not None:
+            self.MIN_SPEED = min_speed
+        if max_speed is not None:
+            self.MAX_SPEED = max_speed
         self._stop_count   = 0
         self._resume_count = 0
         self._gesture_stop = False
@@ -40,20 +46,20 @@ class PhiloController:
 
         return self._gesture_stop
 
-    def compute_cmd(self, bbox, frame_w):
+    def compute_cmd(self, bbox, frame_w, frame_h):
         """
         Returns (left, right, flags).
-        bbox: [x1, y1, x2, y2] or None.
+        bbox: [x1, y1, x2, y2] in frame pixels, or None.
         """
         if bbox is None:
             return 0, 0, 0
 
         x1, y1, x2, y2 = bbox
         cx   = (x1 + x2) / 2
-        area = (x2 - x1) * (y2 - y1)
+        frac = (x2 - x1) * (y2 - y1) / float(frame_w * frame_h)
 
         # Speed: further away → faster, closer → slower
-        t = max(0.0, min(1.0, (area - self.FAR_AREA) / (self.NEAR_AREA - self.FAR_AREA)))
+        t = max(0.0, min(1.0, (frac - self.FAR_FRAC) / (self.NEAR_FRAC - self.FAR_FRAC)))
         base = int(self.MAX_SPEED - t * (self.MAX_SPEED - self.MIN_SPEED))
 
         # Steering: offset from -1 (full left) to +1 (full right)
