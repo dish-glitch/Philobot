@@ -53,6 +53,9 @@ static void i2c_bus_recovery() {
 // Fire ONE sensor per 60 ms slot, round-robin. All three share 40 kHz — firing
 // together makes each hear the others' pulses as phantom near-range echoes.
 static void update_ultrasonic() {
+#ifdef NO_ULTRASONIC
+    return;   // bench: no sensors wired — otherwise timeouts read as a 20 cm obstacle and block forward drive
+#endif
     static uint32_t last_ping_ms = 0;
     uint32_t now = millis();
     if (now - last_ping_ms < US_INTERVAL_MS) return;
