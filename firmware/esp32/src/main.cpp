@@ -109,7 +109,9 @@ void setup() {
 
     motors_init();
     encoders_init();
+#ifndef NO_ULTRASONIC   // its init would reconfigure pins 18/19 used by the bench motor remap
     ultrasonic_init();
+#endif
 
     analogReadResolution(ADC_BITS);
     analogSetAttenuation(ADC_11db);  // full-scale ≈ 3.3 V

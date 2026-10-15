@@ -11,6 +11,20 @@
 #define PIN_R_IN1   33   // IO33  → U6/U7 BIN1
 #define PIN_R_IN2   14   // IO14  → U6/U7 BIN2
 
+// Bench-only remap: puts the 4 motor inputs on the dev board's bottom pin row
+// (RX2, TX2, D18, D19) when the top row is hard to reach on a breadboard.
+// Not compatible with the ultrasonic sensors (they use 18/19) — see platformio.ini.
+#ifdef BENCH_BOTTOM_PINS
+  #undef  PIN_L_IN1
+  #undef  PIN_L_IN2
+  #undef  PIN_R_IN1
+  #undef  PIN_R_IN2
+  #define PIN_L_IN1  16   // RX2
+  #define PIN_L_IN2  17   // TX2
+  #define PIN_R_IN1  18   // D18
+  #define PIN_R_IN2  19   // D19
+#endif
+
 // ── Encoders ─────────────────────────────────────────────────────────────────
 // GPIO34/35 are input-only; no internal pull-up/down available.
 #define PIN_ENC_L   34   // IO34
