@@ -135,6 +135,9 @@ void loop() {
         case PI_MSG_CMD:
             last_cmd    = cmd;
             last_cmd_ms = millis();
+#ifdef PI_OVER_USB
+            Serial.printf("ACK %d %d %d\n", cmd.left, cmd.right, cmd.flags);
+#endif
             break;
         case PI_MSG_ASL:
             display_asl(letter);
