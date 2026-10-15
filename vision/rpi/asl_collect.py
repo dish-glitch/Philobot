@@ -2,18 +2,19 @@
 ASL data collection + training.
 Press a letter key (a-z) to record that sign. Hold it steady.
 Press Q when done — trains automatically.
-Re-collect your 5 letters — features now include z-depth and fingertip distances.
+Features come from asl_features.py, the same code main.py uses at runtime.
 """
 
 import cv2
 import csv
 import os
 import pickle
-import math
 import urllib.request
 import mediapipe as mp
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
+
+from asl_features import landmarks_to_features
 
 SAMPLES_PER_LETTER = 100  # more samples = better accuracy
 DATA_FILE  = "asl_data.csv"
@@ -23,14 +24,6 @@ MODEL_URL  = (
     "https://storage.googleapis.com/mediapipe-models/"
     "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
 )
-
-# Key landmark pairs for distance features (helps distinguish A/S/E)
-DISTANCE_PAIRS = [
-    (4, 8), (4, 12), (4, 16), (4, 20),   # thumb tip to each fingertip
-    (8, 12), (12, 16), (16, 20),           # adjacent fingertip distances
-    (4, 0), (8, 0), (12, 0), (16, 0), (20, 0),  # fingertips to wrist
-]
-
 
 def download_model():
     if not os.path.exists(MODEL_PATH):
@@ -50,24 +43,10 @@ def create_landmarker():
 
 
 def get_features(result):
+    # Must match inference (main.py) exactly — use the shared feature code.
     if not result.hand_landmarks:
         return None
-    hand  = result.hand_landmarks[0]
-    wrist = hand[0]
-
-    # x, y, z relative to wrist
-    row = []
-    for lm in hand:
-        row.extend([lm.x - wrist.x, lm.y - wrist.y, lm.z - wrist.z])
-
-    # Euclidean distances between key landmark pairs
-    for a, b in DISTANCE_PAIRS:
-        dx = hand[a].x - hand[b].x
-        dy = hand[a].y - hand[b].y
-        dz = hand[a].z - hand[b].z
-        row.append(math.sqrt(dx*dx + dy*dy + dz*dz))
-
-    return row
+    return landmarks_to_features(result.hand_landmarks[0])
 
 
 def draw_hand(frame, result):
@@ -99,12 +78,14 @@ def main():
         if not ok:
             break
 
-        frame  = cv2.flip(frame, 1)
+        # Detect on the UNflipped frame, like main.py does, so left/right match;
+        # mirror only the picture shown on screen.
         rgb    = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         result = landmarker.detect(mp_img)
 
         draw_hand(frame, result)
+        frame = cv2.flip(frame, 1)
 
         if active:
             row = get_features(result)
@@ -140,8 +121,8 @@ def main():
     cv2.destroyAllWindows()
     landmarker.close()
 
-    if not collected:
-        print("No data collected.")
+    if len(collected) < 2:
+        print("Need at least 2 different letters to train. Nothing saved.")
         return
 
     with open(DATA_FILE, "w", newline="") as f:
