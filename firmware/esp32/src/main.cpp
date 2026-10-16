@@ -9,6 +9,7 @@
 #include "imu.h"
 #include "display.h"
 #include "pi_comm.h"
+#include "wifi_drive.h"
 
 // ── Safety / timing parameters ───────────────────────────────────────────────
 #define WATCHDOG_MS        500    // stop if no CMD from the Pi for this long
@@ -120,6 +121,7 @@ void setup() {
     if (!display_init())  Serial.println("OLED not found – check I2C wiring");
 
     pi_comm_init(115200);
+    wifi_drive_init();   // no-op unless built with -DWIFI_DRIVE
 
     Serial.println("Philo ready");
     digitalWrite(PIN_LED, LOW);
@@ -145,6 +147,13 @@ void loop() {
             break;
         default:
             break;
+    }
+    {   // 1b. Commands from the phone (WIFI_DRIVE builds) — same path as the Pi's
+        int l, r; uint8_t f;
+        if (wifi_drive_poll(l, r, f)) {
+            last_cmd    = {l, r, f};
+            last_cmd_ms = millis();
+        }
     }
 
     // 2. Sensors
