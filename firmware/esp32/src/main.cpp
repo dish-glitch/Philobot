@@ -53,6 +53,9 @@ static void i2c_bus_recovery() {
 // Fire ONE sensor per 60 ms slot, round-robin. All three share 40 kHz — firing
 // together makes each hear the others' pulses as phantom near-range echoes.
 static void update_ultrasonic() {
+#ifdef NO_ULTRASONIC
+    return;   // bench: no sensors wired — otherwise timeouts read as a 20 cm obstacle and block forward drive
+#endif
     static uint32_t last_ping_ms = 0;
     uint32_t now = millis();
     if (now - last_ping_ms < US_INTERVAL_MS) return;
@@ -106,7 +109,9 @@ void setup() {
 
     motors_init();
     encoders_init();
+#ifndef NO_ULTRASONIC   // its init would reconfigure pins 18/19 used by the bench motor remap
     ultrasonic_init();
+#endif
 
     analogReadResolution(ADC_BITS);
     analogSetAttenuation(ADC_11db);  // full-scale ≈ 3.3 V
@@ -130,6 +135,9 @@ void loop() {
         case PI_MSG_CMD:
             last_cmd    = cmd;
             last_cmd_ms = millis();
+#ifdef PI_OVER_USB
+            Serial.printf("ACK %d %d %d\n", cmd.left, cmd.right, cmd.flags);
+#endif
             break;
         case PI_MSG_ASL:
             display_asl(letter);

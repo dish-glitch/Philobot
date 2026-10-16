@@ -5,9 +5,11 @@
 
 // GY-521 module: AD0 pin tied to GND via U1 pin 7 → I²C address 0x68
 static Adafruit_MPU6050 mpu;
+static bool ready = false;   // stays false if the IMU is missing — never read garbage
 
 bool imu_init() {
     if (!mpu.begin(0x68)) return false;
+    ready = true;
     mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
     mpu.setGyroRange(MPU6050_RANGE_500_DEG);
     mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
@@ -15,6 +17,7 @@ bool imu_init() {
 }
 
 bool imu_read(ImuData &out) {
+    if (!ready) return false;
     sensors_event_t a, g, t;
     if (!mpu.getEvent(&a, &g, &t)) return false;
     out.ax = a.acceleration.x;

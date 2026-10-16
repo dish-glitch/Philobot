@@ -4,14 +4,21 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef PI_OVER_USB
+// Bench mode: commands arrive over the USB cable (laptop), not the Pi UART.
+#define PiSerial Serial
+#else
 // UART1 – GPIO16 (RX from Pi), GPIO17 (TX to Pi)
 static HardwareSerial PiSerial(1);
+#endif
 
 static char    rx_buf[64];
 static uint8_t rx_len = 0;
 
 void pi_comm_init(uint32_t baud) {
+#ifndef PI_OVER_USB   // Serial is already started in setup()
     PiSerial.begin(baud, SERIAL_8N1, PIN_ESP_RX, PIN_ESP_TX);
+#endif
     // Discard anything queued while we were off/resetting (Pi boot messages,
     // stale commands from before a watchdog reset).
     delay(50);
