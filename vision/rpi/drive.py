@@ -15,8 +15,11 @@ Ctrl+C, Esc or closing the window quits — the robot is stopped on exit.
 
 import argparse
 import http.client
+import os
 import time
 
+# Keep reading the controller even when this terminal isn't the focused window.
+os.environ.setdefault("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1")
 import pygame
 import serial
 
@@ -47,32 +50,32 @@ class SerialLink:
 
 
 class WifiLink:
-    """WiFi: the same values as GET /cmd on the ESP32's access point."""
+    """WiFi: the same values as GET /cmd on the ESP32's access point.
+    The ESP32 web server closes the socket after every reply, so each command
+    uses a fresh connection (reusing one made every other request fail)."""
     HOST = "192.168.4.1"
 
     def __init__(self):
-        self.conn = None
         self.ok = None
         print(f"Sending to http://{self.HOST} — make sure this laptop is on WiFi 'Philo-Robot'.")
 
     def send(self, l, r, f):
+        conn = http.client.HTTPConnection(self.HOST, 80, timeout=0.3)
         try:
-            if self.conn is None:
-                self.conn = http.client.HTTPConnection(self.HOST, 80, timeout=0.5)
-            self.conn.request("GET", f"/cmd?l={l}&r={r}&f={f}")
-            self.conn.getresponse().read()
+            conn.request("GET", f"/cmd?l={l}&r={r}&f={f}", headers={"Connection": "close"})
+            conn.getresponse().read()
             if self.ok is not True:
                 print("Connected to the robot.")
             self.ok = True
-        except OSError:
+        except (OSError, http.client.HTTPException):
             if self.ok is not False:
                 print("Can't reach the robot — is the laptop on WiFi 'Philo-Robot'? Retrying...")
             self.ok = False
-            self.conn = None
+        finally:
+            conn.close()
 
     def close(self):
-        if self.conn:
-            self.conn.close()
+        pass
 
 
 def main():
@@ -117,6 +120,7 @@ def main():
         steer    = (k[pygame.K_d] or k[pygame.K_RIGHT]) - (k[pygame.K_a] or k[pygame.K_LEFT])
         return float(throttle), float(steer), bool(k[pygame.K_SPACE])
 
+    last_print = 0.0
     try:
         while True:
             for ev in pygame.event.get():
@@ -128,12 +132,17 @@ def main():
             else:
                 throttle, steer, brake = keyboard()
             if brake:
-                link.send(0, 0, 2)         # brake
+                cmd = (0, 0, 2)            # brake
             else:
                 l = max(-1.0, min(1.0, throttle + steer))
                 r = max(-1.0, min(1.0, throttle - steer))
-                link.send(scale(l, args.min_speed, args.max_speed),
-                          scale(r, args.min_speed, args.max_speed), 0)
+                cmd = (scale(l, args.min_speed, args.max_speed),
+                       scale(r, args.min_speed, args.max_speed), 0)
+            link.send(*cmd)
+            if time.time() - last_print > 0.5:    # live readout: is the stick being seen?
+                last_print = time.time()
+                print(f"\rstick fwd {throttle:+.2f} turn {steer:+.2f}  ->  CMD {cmd[0]:4d} {cmd[1]:4d} {cmd[2]}   ",
+                      end="", flush=True)
             time.sleep(1 / SEND_HZ)
     except KeyboardInterrupt:
         pass
