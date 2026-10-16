@@ -2,7 +2,8 @@
 Drive Philo with a game controller — no camera, no YOLO.
 Controller -> laptop (USB or Bluetooth) -> ESP32 (USB cable) -> motors.
 
-  python drive.py --serial COM15
+  python drive.py --serial COM15                 # USB cable to the ESP32
+  python drive.py --wifi                         # wireless: laptop joined to WiFi "Philo-Robot"
   python drive.py --serial COM15 --min-speed 150 --max-speed 255
 
 Left stick: up/down = forward/back, left/right = turn.  B / Circle (button 1) = stop.
@@ -13,6 +14,7 @@ Ctrl+C, Esc or closing the window quits — the robot is stopped on exit.
 """
 
 import argparse
+import http.client
 import time
 
 import pygame
@@ -30,12 +32,60 @@ def scale(v, min_speed, max_speed):
     return int(s if v > 0 else -s)
 
 
+class SerialLink:
+    """USB cable: the CMD text protocol."""
+    def __init__(self, port):
+        self.ser = serial.Serial(port, 115200, timeout=0)
+        time.sleep(2.5)                   # ESP32 resets when the port opens
+
+    def send(self, l, r, f):
+        self.ser.reset_input_buffer()     # ignore STATUS/ACK chatter from the ESP32
+        self.ser.write(f"CMD {l} {r} {f}\n".encode())
+
+    def close(self):
+        self.ser.close()
+
+
+class WifiLink:
+    """WiFi: the same values as GET /cmd on the ESP32's access point."""
+    HOST = "192.168.4.1"
+
+    def __init__(self):
+        self.conn = None
+        self.ok = None
+        print(f"Sending to http://{self.HOST} — make sure this laptop is on WiFi 'Philo-Robot'.")
+
+    def send(self, l, r, f):
+        try:
+            if self.conn is None:
+                self.conn = http.client.HTTPConnection(self.HOST, 80, timeout=0.5)
+            self.conn.request("GET", f"/cmd?l={l}&r={r}&f={f}")
+            self.conn.getresponse().read()
+            if self.ok is not True:
+                print("Connected to the robot.")
+            self.ok = True
+        except OSError:
+            if self.ok is not False:
+                print("Can't reach the robot — is the laptop on WiFi 'Philo-Robot'? Retrying...")
+            self.ok = False
+            self.conn = None
+
+    def close(self):
+        if self.conn:
+            self.conn.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--serial", required=True, help="ESP32 port, e.g. COM15")
+    ap.add_argument("--serial", help="ESP32 port over USB, e.g. COM15")
+    ap.add_argument("--wifi", action="store_true",
+                    help="send over WiFi instead (ESP32 flashed with philo_drv8833_wifi; "
+                         "join the laptop to WiFi 'Philo-Robot' first)")
     ap.add_argument("--min-speed", type=int, default=120, help="slowest speed that still moves the motors")
     ap.add_argument("--max-speed", type=int, default=255)
     args = ap.parse_args()
+    if not args.serial and not args.wifi:
+        ap.error("give --serial COMx (USB) or --wifi")
 
     pygame.init()
     pygame.joystick.init()
@@ -50,8 +100,10 @@ def main():
         pygame.display.set_mode((360, 120))
         pygame.display.set_caption("Philo drive — WASD / arrows, Space = brake")
 
-    ser = serial.Serial(args.serial, 115200, timeout=0)
-    time.sleep(2.5)                       # ESP32 resets when the port opens
+    if args.wifi:
+        link = WifiLink()
+    else:
+        link = SerialLink(args.serial)
     print("Ready." + (" Left stick drives, B/Circle stops, Ctrl+C quits." if js else ""))
 
     def axis(i):
@@ -70,25 +122,24 @@ def main():
             for ev in pygame.event.get():
                 if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
                     raise KeyboardInterrupt
-            ser.reset_input_buffer()      # ignore STATUS/ACK chatter from the ESP32
             if js:
                 throttle, steer = -axis(1), axis(0)   # stick up = forward
                 brake = js.get_numbuttons() > 1 and js.get_button(1)
             else:
                 throttle, steer, brake = keyboard()
             if brake:
-                ser.write(b"CMD 0 0 2\n")  # brake
+                link.send(0, 0, 2)         # brake
             else:
                 l = max(-1.0, min(1.0, throttle + steer))
                 r = max(-1.0, min(1.0, throttle - steer))
-                ser.write(f"CMD {scale(l, args.min_speed, args.max_speed)} "
-                          f"{scale(r, args.min_speed, args.max_speed)} 0\n".encode())
+                link.send(scale(l, args.min_speed, args.max_speed),
+                          scale(r, args.min_speed, args.max_speed), 0)
             time.sleep(1 / SEND_HZ)
     except KeyboardInterrupt:
         pass
     finally:
-        ser.write(b"CMD 0 0 1\n")
-        ser.close()
+        link.send(0, 0, 1)
+        link.close()
         print("Stopped.")
 
 
