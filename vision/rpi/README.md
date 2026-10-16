@@ -34,6 +34,7 @@ and serial port differ.
 | `controller.py` | Bounding box → `CMD` + gesture state machine |
 | `uart.py` | Serial link to the microcontroller (`CMD` out, `STATUS` in) |
 | `gamepad.py` | Xbox controller → differential drive (pygame) |
+| `drive.py` | Controller-only driving, no camera: `python drive.py --serial COM15` |
 | `asl_features.py` | **Canonical** scale-invariant hand features (shared by train + infer) |
 | `asl_from_dataset.py` | Train ASL model: `--dataset` (extract+train) or `--csv` (train from features) |
 | `asl_collect.py` | Alternative: collect your own ASL samples from webcam |
