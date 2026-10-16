@@ -7,7 +7,9 @@ Controller -> laptop (USB or Bluetooth) -> ESP32 (USB cable) -> motors.
 
 Left stick: up/down = forward/back, left/right = turn.  B / Circle (button 1) = stop.
 Works with Xbox and PlayStation-style controllers (any SDL gamepad).
-Ctrl+C or close the window to quit — the robot is stopped on exit.
+No controller plugged in? It opens a small window instead: click it, then
+W/A/S/D or the arrow keys drive, Space brakes.
+Ctrl+C, Esc or closing the window quits — the robot is stopped on exit.
 """
 
 import argparse
@@ -37,29 +39,46 @@ def main():
 
     pygame.init()
     pygame.joystick.init()
-    if pygame.joystick.get_count() == 0:
-        raise SystemExit("No controller found. Plug it in (USB) or pair it over Bluetooth, then rerun.")
-    js = pygame.joystick.Joystick(0)
-    js.init()
-    print(f"Controller: {js.get_name()}")
+    js = None
+    if pygame.joystick.get_count() > 0:
+        js = pygame.joystick.Joystick(0)
+        js.init()
+        print(f"Controller: {js.get_name()}")
+    else:
+        print("No controller found — using the keyboard. Click the 'Philo drive' window, "
+              "then W/A/S/D or arrows drive, Space brakes, Esc quits.")
+        pygame.display.set_mode((360, 120))
+        pygame.display.set_caption("Philo drive — WASD / arrows, Space = brake")
 
     ser = serial.Serial(args.serial, 115200, timeout=0)
     time.sleep(2.5)                       # ESP32 resets when the port opens
-    print("Ready. Left stick drives, B/Circle stops, Ctrl+C quits.")
+    print("Ready." + (" Left stick drives, B/Circle stops, Ctrl+C quits." if js else ""))
 
     def axis(i):
         v = js.get_axis(i)
         return 0.0 if abs(v) < DEADZONE else v
 
+    def keyboard():
+        """Return (throttle, steer, brake) from W/A/S/D or the arrow keys."""
+        k = pygame.key.get_pressed()
+        throttle = (k[pygame.K_w] or k[pygame.K_UP]) - (k[pygame.K_s] or k[pygame.K_DOWN])
+        steer    = (k[pygame.K_d] or k[pygame.K_RIGHT]) - (k[pygame.K_a] or k[pygame.K_LEFT])
+        return float(throttle), float(steer), bool(k[pygame.K_SPACE])
+
     try:
         while True:
-            pygame.event.pump()
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
+                    raise KeyboardInterrupt
             ser.reset_input_buffer()      # ignore STATUS/ACK chatter from the ESP32
-            if js.get_numbuttons() > 1 and js.get_button(1):
+            if js:
+                throttle, steer = -axis(1), axis(0)   # stick up = forward
+                brake = js.get_numbuttons() > 1 and js.get_button(1)
+            else:
+                throttle, steer, brake = keyboard()
+            if brake:
                 ser.write(b"CMD 0 0 2\n")  # brake
             else:
-                throttle = -axis(1)        # stick up = forward
-                steer    = axis(0)
                 l = max(-1.0, min(1.0, throttle + steer))
                 r = max(-1.0, min(1.0, throttle - steer))
                 ser.write(f"CMD {scale(l, args.min_speed, args.max_speed)} "
