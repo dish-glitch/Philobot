@@ -1,42 +1,40 @@
-// Philo bench base — wheel hub for a 75:1 N20 gearmotor (3 mm D-shaft).
-// Copies the club's Lego-style hub: two flanges with a groove the tire's
-// inner lip snaps into. Measure the blue hub with calipers (in mm) and
-// set the values below, then F6 (render) and File > Export > STL.
+// Philo bench base — rim for a 75:1 N20 gearmotor (3 mm D-shaft) that takes a
+// LEGO tire 89201 / 24341 ("Tire Ø24 x 14 shallow tread"): 18 mm inner dia,
+// 24 mm outer dia, 14 mm wide. Same size as LEGO rim 55982 (Ø18 x 14).
+// A ready-made STL with these values is next to this file (n20_rim_lego_89201.stl).
+// To tweak: change a value, F6 (render), File > Export > STL.
 
-// ── measure these from the existing blue hub ──
-hub_width      = 11.4;  // overall width (measured: 0.45 in)
-flange_dia     = 18.0;  // outer diameter of the two flanges  (MEASURE)
-groove_dia     = 15.0;  // diameter at the bottom of the middle groove (MEASURE)
-groove_width   = 3.0;   // width of the middle groove (MEASURE)
+// ── tire fit ──
+rim_width    = 14.0;   // tire width
+seat_dia     = 18.3;   // where the tire sits: tire ID is 18 mm, +0.3 so it grips
+lip_dia      = 19.6;   // raised lips at both edges keep the tire from walking off
+lip_width    = 1.2;    // width of each lip
 
-// ── N20 shaft: 3 mm round with one flat. Printed holes come out small,
-//    so these are oversized slightly. Loosen/tighten after a test print. ──
-shaft_dia      = 3.15;  // round part of the hole
-shaft_flat     = 2.55;  // distance from the flat to the far side of the hole
-shaft_depth    = 9.0;   // how deep the shaft goes into the hub
+// ── N20 shaft: 3 mm round with one flat. Printed holes come out small, so these
+//    are slightly oversized. Loosen/tighten after one test print. ──
+shaft_dia    = 3.15;   // round part of the hole
+shaft_flat   = 2.55;   // flat to the far side of the hole
+shaft_depth  = 9.0;    // how deep the shaft goes in (N20 shafts are ~9-10 mm)
 
 $fn = 96;
 
 module d_hole() {
     intersection() {
         cylinder(d = shaft_dia, h = shaft_depth + 0.01);
-        // keep everything except a slice on one side → the flat
         translate([-shaft_dia / 2, -shaft_dia / 2, 0])
             cube([shaft_flat, shaft_dia, shaft_depth + 0.01]);
     }
 }
 
-module hub() {
-    flange_w = (hub_width - groove_width) / 2;
+module rim() {
     difference() {
         union() {
-            cylinder(d = flange_dia, h = flange_w);                               // inner flange
-            translate([0, 0, flange_w]) cylinder(d = groove_dia, h = groove_width); // groove
-            translate([0, 0, flange_w + groove_width])
-                cylinder(d = flange_dia, h = flange_w);                           // outer flange
+            cylinder(d = lip_dia, h = lip_width);                                      // inner lip
+            cylinder(d = seat_dia, h = rim_width);                                     // tire seat
+            translate([0, 0, rim_width - lip_width]) cylinder(d = lip_dia, h = lip_width); // outer lip
         }
         translate([0, 0, -0.01]) d_hole();
     }
 }
 
-hub();
+rim();
