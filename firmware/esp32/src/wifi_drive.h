@@ -8,3 +8,6 @@ void wifi_drive_init();
 
 // Call every loop. Returns true when the phone sent a new command.
 bool wifi_drive_poll(int &left, int &right, uint8_t &flags);
+
+// Returns true when the phone/laptop sent /servo?ch=..&deg=..
+bool wifi_servo_poll(int &ch, int &deg);

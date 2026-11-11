@@ -11,6 +11,8 @@ static WebServer server(80);
 static volatile bool    has_cmd = false;
 static int              cmd_l = 0, cmd_r = 0;
 static uint8_t          cmd_f = 0;
+static volatile bool    has_servo = false;
+static int              srv_ch = 0, srv_deg = 90;
 
 // Joystick page. Sends /cmd?l=..&r=..&f=.. ~10x/s while touched, and once
 // more with 0s on release. The ESP32 watchdog stops the motors if the
@@ -57,11 +59,19 @@ static void handle_cmd() {
     server.send(200, "text/plain", "ok");
 }
 
+static void handle_servo() {
+    srv_ch  = server.arg("ch").toInt();
+    srv_deg = server.arg("deg").toInt();
+    has_servo = true;
+    server.send(200, "text/plain", "ok");
+}
+
 void wifi_drive_init() {
     WiFi.mode(WIFI_AP);
     WiFi.softAP(WIFI_SSID, WIFI_PASS);
     server.on("/", []() { server.send_P(200, "text/html", PAGE); });
     server.on("/cmd", handle_cmd);
+    server.on("/servo", handle_servo);
     server.begin();
     Serial.printf("WiFi drive: join \"%s\" (password %s), open http://%s\n",
                   WIFI_SSID, WIFI_PASS, WiFi.softAPIP().toString().c_str());
@@ -75,7 +85,15 @@ bool wifi_drive_poll(int &left, int &right, uint8_t &flags) {
     return true;
 }
 
+bool wifi_servo_poll(int &ch, int &deg) {
+    if (!has_servo) return false;     // server.handleClient() already ran in wifi_drive_poll()
+    has_servo = false;
+    ch = srv_ch; deg = srv_deg;
+    return true;
+}
+
 #else
 void wifi_drive_init() {}
 bool wifi_drive_poll(int &, int &, uint8_t &) { return false; }
+bool wifi_servo_poll(int &, int &) { return false; }
 #endif

@@ -10,6 +10,7 @@
 #include "display.h"
 #include "pi_comm.h"
 #include "wifi_drive.h"
+#include "arm.h"
 
 // ── Safety / timing parameters ───────────────────────────────────────────────
 #define WATCHDOG_MS        500    // stop if no CMD from the Pi for this long
@@ -119,6 +120,7 @@ void setup() {
 
     if (!imu_init())      Serial.println("IMU not found – check I2C wiring");
     if (!display_init())  Serial.println("OLED not found – check I2C wiring");
+    if (!arm_init())      Serial.println("Arm (PCA9685) not found – arm commands ignored");
 
     pi_comm_init(115200);
     wifi_drive_init();   // no-op unless built with -DWIFI_DRIVE
@@ -141,6 +143,12 @@ void loop() {
             Serial.printf("ACK %d %d %d\n", cmd.left, cmd.right, cmd.flags);
 #endif
             break;
+        case PI_MSG_SERVO: {
+            int ch, deg;
+            pi_comm_servo(ch, deg);
+            arm_set(ch, deg);
+            break;
+        }
         case PI_MSG_ASL:
             display_asl(letter);
             asl_until_ms = millis() + ASL_SHOW_MS;
@@ -154,6 +162,8 @@ void loop() {
             last_cmd    = {l, r, f};
             last_cmd_ms = millis();
         }
+        int ch, deg;
+        if (wifi_servo_poll(ch, deg)) arm_set(ch, deg);
     }
 
     // 2. Sensors
