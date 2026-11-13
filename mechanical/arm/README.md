@@ -10,6 +10,7 @@ the **606ZZ** (6 x 17 x 6 mm) the design calls for.
 | `EBAmk2_013_lower base_608.stl` | `EBAmk2_013_lower base.STL` | Bearing pocket widened 17.3 -> 22.3 mm and deepened 6.0 -> 7.0 mm. Part thickness, holes and ball track unchanged. |
 | `EBAmk2_013_lower base_608_7.5mm-balls.stl` | same | 608 pocket **and** ball track re-cut for **7.5 mm** balls (path r = 30 mm, ~22-24 balls). |
 | `EBAmk2_013_lower base_608_4.5mm-balls.stl` | same | 608 pocket **and** a raised ring track for **4.5 mm (.177) steel BBs** (path r = 31 mm, ~38-40 balls). |
+| `EBAmk2_016_claw gear drive_bigger-horn-pocket.stl` | `EBAmk2_016_claw gear drive.STL` | Looser horn pocket for SG90 single-arm horns that don't fit: hub 7.5 -> 8.4 mm, arm slot ~5.5 -> 6.8 mm wide, pocket 0.6 mm deeper. Print at 100%. |
 | `608_to_M6_sleeve.stl` | — (new) | 7.95 mm OD / 6.3 mm ID / 7 mm sleeve so the M6x25 bolt fits the 608's 8 mm bore. |
 
 Ball tracks: the gear above (`011_gearmast`) has a flat underside that rides on the balls
