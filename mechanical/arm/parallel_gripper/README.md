@@ -15,7 +15,7 @@ credit: sthone, on Thingiverse/Printables.
 | Robotic_Arm_Finger_Pad.stl | 2 | None. Print in TPU, or use PLA with rubber stuck on. |
 | Robotic_Arm_Gear_Arm_Left_M3.stl | 1 | Both pivot holes -> 3.3 mm (same as the right arm) |
 | Robotic_Arm_Palm_M3.stl | 1 | 4 pivot holes -> 2.6 mm M3 pilot, 1 mm deeper |
-| Robotic_Arm_Palm_Top_M3.stl | 1 | All 4 pivot holes are 3.3 mm clearance with a 6 mm counterbore, so an M3x20 head sits 3.9 mm down and the tip lands 4.3 mm into the Palm floor |
+| Robotic_Arm_Palm_Top_M3.stl | 1 | All 4 pivot holes are 3.3 mm clearance with a 6 mm counterbore, so an M3x20 head sits 3.9 mm down and the tip lands about 4 mm into the Palm floor (checked against the Palm_Top resting on the Palm walls) |
 | Hinge_Pivot_Spacer_M3.stl | 2 | New. A 4.7 OD x 4.9 mm tube that keeps each forward hinge arm from riding up the screw |
 
 
