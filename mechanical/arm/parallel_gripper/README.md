@@ -11,7 +11,7 @@ credit: sthone, on Thingiverse/Printables.
 | Robotic_Arm_Forward_Hinge_Arm_M3.stl | 2 | Both pivot holes → 3.3 mm (M3 turns freely) |
 | Robotic_Arm_Gear_Arm_Right_M3.stl | 1 | Both pivot holes → 3.3 mm |
 | Robotic_Arm_Servo_Gear.stl | 1 | None. Original 7.4 mm horn-hub pocket. |
-| Robotic_Arm_Servo_Gear_8.4mm-hub.stl | (alt) | Hub pocket widened to 8.4 mm for MG90S horns that are too tight in the original. Print only one of the two. |
+| Robotic_Arm_Servo_Gear_7.7mm-hub.stl | (alt, recommended) | Hub pocket 7.4 -> 7.7 mm. The MG90S horn fit the original Mk2 claw gear (7.5 mm pocket); this allows for prints coming out slightly undersize. Print only one of the two. |
 | Robotic_Arm_Finger_Pad.stl | 2 | None. Print in TPU, or use PLA with rubber stuck on. |
 
 Still needed from the original download: the **frame/base** and the **Gear Arm
