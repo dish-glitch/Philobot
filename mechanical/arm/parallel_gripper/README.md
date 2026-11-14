@@ -10,7 +10,8 @@ credit: sthone, on Thingiverse/Printables.
 | Robotic_Arm_Finger_M3.stl | 2 | 2-56 holes (2.03 mm) → 2.6 mm, so an M3 cuts its own thread |
 | Robotic_Arm_Forward_Hinge_Arm_M3.stl | 2 | Both pivot holes → 3.3 mm (M3 turns freely) |
 | Robotic_Arm_Gear_Arm_Right_M3.stl | 1 | Both pivot holes → 3.3 mm |
-| Robotic_Arm_Servo_Gear.stl | 1 | None. Takes an SG90 horn. |
+| Robotic_Arm_Servo_Gear.stl | 1 | None. Original 7.4 mm horn-hub pocket. |
+| Robotic_Arm_Servo_Gear_8.4mm-hub.stl | (alt) | Hub pocket widened to 8.4 mm for MG90S horns that are too tight in the original. Print only one of the two. |
 | Robotic_Arm_Finger_Pad.stl | 2 | None. Print in TPU, or use PLA with rubber stuck on. |
 
 Still needed from the original download: the **frame/base** and the **Gear Arm
