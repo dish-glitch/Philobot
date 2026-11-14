@@ -13,9 +13,11 @@ credit: sthone, on Thingiverse/Printables.
 | Robotic_Arm_Servo_Gear.stl | 1 | None. Original 7.4 mm horn-hub pocket. |
 | Robotic_Arm_Servo_Gear_7.7mm-hub.stl | (alt, recommended) | Hub pocket 7.4 -> 7.7 mm. The MG90S horn fit the original Mk2 claw gear (7.5 mm pocket); this allows for prints coming out slightly undersize. Print only one of the two. |
 | Robotic_Arm_Finger_Pad.stl | 2 | None. Print in TPU, or use PLA with rubber stuck on. |
+| Robotic_Arm_Gear_Arm_Left_M3.stl | 1 | Both pivot holes -> 3.3 mm (same as the right arm) |
+| Robotic_Arm_Palm_M3.stl | 1 | 4 pivot holes -> 2.6 mm M3 pilot, 1 mm deeper |
+| Robotic_Arm_Palm_Top_M3.stl | 1 | All 4 pivot holes are 3.3 mm clearance with a 6 mm counterbore, so an M3x20 head sits 3.9 mm down and the tip lands 4.3 mm into the Palm floor |
+| Hinge_Pivot_Spacer_M3.stl | 2 | New. A 4.7 OD x 4.9 mm tube that keeps each forward hinge arm from riding up the screw |
 
-Still needed from the original download: the **frame/base** and the **Gear Arm
-Left**. Their 4-40 pivot holes need the same resizing.
 
 ## Screws (M3 × 20, 8 total)
 - **Finger joints, 4 screws.** Each finger has a 3.2 mm tab, a 6.3 mm slot
@@ -23,4 +25,9 @@ Left**. Their 4-40 pivot holes need the same resizing.
   the top tab and the arm, then threads into the bottom tab. A 20 mm screw
   sticks out about 7 mm underneath. Add an M3 nut there to lock it, or cut
   the screw down. Don't tighten so hard that the arm can't swing.
-- **Base pivots, 4 screws.** Resizing waits on the frame file.
+- **Palm pivots, 4 screws.** All 4 go in from the **top of Palm_Top**, down
+  through Palm_Top, then the arm, then thread into the Palm floor. This is
+  different from the original, which used 1" flat heads for the gear arms and
+  short button heads under the top for the hinge arms. Put a spacer on each
+  hinge-arm screw, between the hinge arm and Palm_Top. Tighten until snug,
+  then check the fingers still open and close freely.
