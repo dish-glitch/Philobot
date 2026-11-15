@@ -13,6 +13,7 @@ a servo pushed past what the arm allows will stall, get hot and can strip.
 
 import argparse
 import http.client
+import threading
 import time
 
 import serial
@@ -30,13 +31,27 @@ def main():
 
     ser = None
     if args.serial:
-        ser = serial.Serial(args.serial, 115200, timeout=0)
+        ser = serial.Serial(args.serial, 115200, timeout=0.2, write_timeout=1)
         time.sleep(2.5)                   # ESP32 resets when the port opens
+        # The ESP32 streams STATUS lines 10x a second. If nobody reads them the
+        # PC's receive buffer fills, the link stalls and our next write hangs —
+        # so keep draining (and discarding) everything it sends.
+        def drain():
+            while ser.is_open:
+                try:
+                    ser.read(4096)
+                except (serial.SerialException, OSError, TypeError):
+                    break
+        threading.Thread(target=drain, daemon=True).start()
 
     def send(ch, deg):
         if ser:
-            ser.write(f"SERVO {ch} {deg}\n".encode())
-            return True
+            try:
+                ser.write(f"SERVO {ch} {deg}\n".encode())
+                return True
+            except serial.SerialTimeoutException:
+                print("  ESP32 isn't taking data — unplug/replug USB and restart this script")
+                return False
         conn = http.client.HTTPConnection("192.168.4.1", 80, timeout=1)
         try:
             conn.request("GET", f"/servo?ch={ch}&deg={deg}", headers={"Connection": "close"})
