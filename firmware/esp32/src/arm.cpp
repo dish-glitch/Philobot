@@ -26,7 +26,8 @@ static const Joint J[N_CH] = {
     {10, 170, 15, 2, RELAX_NEVER,    0},  // 0 base     (MG996R) kept powered: the turntable spins
                                           //   freely on its balls, a limp base would drift
     {20, 120, 15, 0, RELAX_NEVER,    0},  // 1 shoulder (MG996R) home 20
-    { 0, 180, 15, 0, RELAX_NEVER,    0},  // 2 elbow    (MG996R) NOT MEASURED with links on — narrow this!
+    {45, 155, 15, 0, RELAX_NEVER,    0},  // 2 elbow    (MG996R) measured 40-160; 5° margin because
+                                          //   its safe range shifts with the shoulder angle
     {50, 140, 10, 4, RELAX_AT_LO,  500},  // 3 gripper  (MG90S) 50 open, 140 closed; 40/150 hit end stops
     // 4..15 unused
     {0,180,10,0,RELAX_NEVER,0},{0,180,10,0,RELAX_NEVER,0},{0,180,10,0,RELAX_NEVER,0},
