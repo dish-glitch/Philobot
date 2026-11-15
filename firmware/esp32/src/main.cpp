@@ -165,6 +165,7 @@ void loop() {
         int ch, deg;
         if (wifi_servo_poll(ch, deg)) arm_set(ch, deg);
     }
+    arm_update();   // step servos toward their targets
 
     // 2. Sensors
     update_ultrasonic();
