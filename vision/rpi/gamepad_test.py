@@ -23,12 +23,19 @@ print(f"Controller: {js.get_name()}")
 print(f"Axes: {js.get_numaxes()}   Buttons: {js.get_numbuttons()}   Hats (D-pad): {js.get_numhats()}")
 print("\nMove the LEFT STICK, press every button and the D-pad. Note the numbers. Ctrl+C to quit.\n")
 
+# Resting values: PlayStation triggers sit at -1.0 when released, so report
+# changes from rest instead of anything non-zero.
+pygame.event.pump()
+time.sleep(0.2)
+pygame.event.pump()
+rest = [js.get_axis(a) for a in range(js.get_numaxes())]
+
 while True:
     pygame.event.pump()
     parts = []
     for a in range(js.get_numaxes()):
         v = js.get_axis(a)
-        if abs(v) > 0.25:
+        if abs(v - rest[a]) > 0.25:
             parts.append(f"axis{a}={v:+.2f}")
     for b in range(js.get_numbuttons()):
         if js.get_button(b):
