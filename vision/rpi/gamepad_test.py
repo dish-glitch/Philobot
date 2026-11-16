@@ -20,8 +20,8 @@ if pygame.joystick.get_count() == 0:
 js = pygame.joystick.Joystick(0)
 js.init()
 print(f"Controller: {js.get_name()}")
-print(f"Axes: {js.get_numaxes()}   Buttons: {js.get_numbuttons()}")
-print("\nMove the LEFT STICK and press buttons. Note the numbers. Ctrl+C to quit.\n")
+print(f"Axes: {js.get_numaxes()}   Buttons: {js.get_numbuttons()}   Hats (D-pad): {js.get_numhats()}")
+print("\nMove the LEFT STICK, press every button and the D-pad. Note the numbers. Ctrl+C to quit.\n")
 
 while True:
     pygame.event.pump()
@@ -33,6 +33,9 @@ while True:
     for b in range(js.get_numbuttons()):
         if js.get_button(b):
             parts.append(f"BUTTON {b}")
+    for h in range(js.get_numhats()):
+        if js.get_hat(h) != (0, 0):
+            parts.append(f"hat{h}={js.get_hat(h)}")
     if parts:
         print("   " + "   ".join(parts))
     time.sleep(0.1)
