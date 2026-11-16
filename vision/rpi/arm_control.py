@@ -24,6 +24,34 @@ AUTO_CH = 99          # "SERVO 99 <deg>" = auto-grab on at <deg>, 0 = off (see a
 BTN_B, BTN_X, BTN_Y, BTN_LB, BTN_RB, BTN_START = 1, 2, 3, 4, 5, 7      # Xbox layout in SDL
 
 
+class KeyboardPad:
+    """Makes the keyboard look like a controller to ArmPad (needs a focused pygame window).
+
+      J / L   base left/right        I / K   shoulder forward/back
+      U / O   elbow down/up          G       grab        H   release
+      T       auto-grab on/off       Home    home pose
+    """
+    def __init__(self):
+        import pygame
+        self.pg = pygame
+        self.keys = {BTN_B: pygame.K_t, BTN_X: pygame.K_h, BTN_Y: pygame.K_g,
+                     BTN_LB: pygame.K_u, BTN_RB: pygame.K_o, BTN_START: pygame.K_HOME}
+
+    def get_numbuttons(self):
+        return 8
+
+    def get_button(self, b):
+        k = self.keys.get(b)
+        return bool(k and self.pg.key.get_pressed()[k])
+
+    def get_numhats(self):
+        return 1
+
+    def get_hat(self, _):
+        k = self.pg.key.get_pressed()
+        return (k[self.pg.K_l] - k[self.pg.K_j], k[self.pg.K_i] - k[self.pg.K_k])
+
+
 class ArmPad:
     def __init__(self, js, send_servo, grip=GRIP, deg_per_s=60):
         self.js = js

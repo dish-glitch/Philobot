@@ -11,7 +11,8 @@ Arm: D-pad = base/shoulder, R1/L1 = elbow up/down, Y = grab, X = release,
 B = auto-grab on/off, Start = home pose (details in arm_control.py).
 Works with Xbox and PlayStation-style controllers (any SDL gamepad).
 No controller plugged in? It opens a small window instead: click it, then
-W/A/S/D or the arrow keys drive, Space brakes.
+W/A/S/D or the arrow keys drive, Space brakes, and the arm is on
+J/L base, I/K shoulder, U/O elbow, G grab, H release, T auto-grab, Home = home pose.
 Ctrl+C, Esc or closing the window quits — the robot is stopped on exit.
 """
 
@@ -25,7 +26,7 @@ os.environ.setdefault("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1")
 import pygame
 import serial
 
-from arm_control import ArmPad
+from arm_control import ArmPad, KeyboardPad
 from joy_pick import pick_joystick
 
 DEADZONE = 0.15
@@ -114,16 +115,17 @@ def main():
     if js:
         print(f"Controller: {js.get_name()}")
     else:
-        print("No controller found — using the keyboard. Click the 'Philo drive' window, "
-              "then W/A/S/D or arrows drive, Space brakes, Esc quits.")
-        pygame.display.set_mode((360, 120))
-        pygame.display.set_caption("Philo drive — WASD / arrows, Space = brake")
+        print("No controller found — using the keyboard. Click the 'Philo drive' window, then:\n"
+              "  drive: W/A/S/D or arrows, Space brakes, Esc quits\n"
+              "  arm:   J/L base, I/K shoulder, U/O elbow, G grab, H release, T auto-grab, Home = home pose")
+        pygame.display.set_mode((420, 120))
+        pygame.display.set_caption("Philo — click here, then WASD drive / IJKL UO arm / G grab H release")
 
     if args.wifi:
         link = WifiLink()
     else:
         link = SerialLink(args.serial)
-    arm = ArmPad(js, link.send_servo) if js else None
+    arm = ArmPad(js if js else KeyboardPad(), link.send_servo)
     print("Ready." + (" Left stick drives (View = brake), D-pad = base/shoulder, R1/L1 = elbow, "
                       "Y grab, X release, B auto-grab on/off, Start home, Ctrl+C quits." if js else ""))
 
