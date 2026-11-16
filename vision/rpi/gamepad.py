@@ -6,6 +6,8 @@ A button = 0. Headless-friendly (dummy SDL video driver).
 
 import os
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")  # no window needed
+# Read the controller even when no SDL window has focus (Windows drops input otherwise).
+os.environ.setdefault("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1")
 import pygame
 
 DEADZONE      = 0.15
