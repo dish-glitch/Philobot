@@ -16,35 +16,39 @@ import pygame
 pygame.init()
 pygame.joystick.init()
 
-if pygame.joystick.get_count() == 0:
-    raise SystemExit("No controller found. Plug the Xbox controller into the Pi (USB cable) and retry.")
+n = pygame.joystick.get_count()
+if n == 0:
+    raise SystemExit("No controller found. Plug it in (USB data cable) and retry.")
 
-js = pygame.joystick.Joystick(0)
-js.init()
-print(f"Controller: {js.get_name()}")
-print(f"Axes: {js.get_numaxes()}   Buttons: {js.get_numbuttons()}   Hats (D-pad): {js.get_numhats()}")
-print("\nMove the LEFT STICK, press every button and the D-pad. Note the numbers. Ctrl+C to quit.\n")
+pads = [pygame.joystick.Joystick(i) for i in range(n)]
+for i, js in enumerate(pads):
+    js.init()
+    print(f"Joystick {i}: {js.get_name()}   axes {js.get_numaxes()}  buttons {js.get_numbuttons()}  "
+          f"hats {js.get_numhats()}")
+print("\nMove the LEFT STICK, press every button and the D-pad. Each line starts with the joystick")
+print("number it came from. Ctrl+C to quit.\n")
 
 # Resting values: PlayStation triggers sit at -1.0 when released, so report
 # changes from rest instead of anything non-zero.
 pygame.event.pump()
 time.sleep(0.2)
 pygame.event.pump()
-rest = [js.get_axis(a) for a in range(js.get_numaxes())]
+rest = [[js.get_axis(a) for a in range(js.get_numaxes())] for js in pads]
 
 while True:
     pygame.event.pump()
-    parts = []
-    for a in range(js.get_numaxes()):
-        v = js.get_axis(a)
-        if abs(v - rest[a]) > 0.25:
-            parts.append(f"axis{a}={v:+.2f}")
-    for b in range(js.get_numbuttons()):
-        if js.get_button(b):
-            parts.append(f"BUTTON {b}")
-    for h in range(js.get_numhats()):
-        if js.get_hat(h) != (0, 0):
-            parts.append(f"hat{h}={js.get_hat(h)}")
-    if parts:
-        print("   " + "   ".join(parts))
+    for i, js in enumerate(pads):
+        parts = []
+        for a in range(js.get_numaxes()):
+            v = js.get_axis(a)
+            if abs(v - rest[i][a]) > 0.25:
+                parts.append(f"axis{a}={v:+.2f}")
+        for b in range(js.get_numbuttons()):
+            if js.get_button(b):
+                parts.append(f"BUTTON {b}")
+        for h in range(js.get_numhats()):
+            if js.get_hat(h) != (0, 0):
+                parts.append(f"hat{h}={js.get_hat(h)}")
+        if parts:
+            print(f"[joy {i}]  " + "   ".join(parts))
     time.sleep(0.1)

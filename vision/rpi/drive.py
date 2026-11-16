@@ -26,6 +26,7 @@ import pygame
 import serial
 
 from arm_control import ArmPad
+from joy_pick import pick_joystick
 
 DEADZONE = 0.15
 SEND_HZ  = 20          # well inside the ESP32's 500 ms watchdog
@@ -109,10 +110,8 @@ def main():
 
     pygame.init()
     pygame.joystick.init()
-    js = None
-    if pygame.joystick.get_count() > 0:
-        js = pygame.joystick.Joystick(0)
-        js.init()
+    js = pick_joystick()
+    if js:
         print(f"Controller: {js.get_name()}")
     else:
         print("No controller found — using the keyboard. Click the 'Philo drive' window, "
