@@ -7,6 +7,8 @@ Controller -> laptop (USB or Bluetooth) -> ESP32 (USB cable) -> motors.
   python drive.py --serial COM15 --min-speed 150 --max-speed 255
 
 Left stick: up/down = forward/back, left/right = turn.  B / Circle (button 1) = stop.
+Arm: D-pad = base/shoulder, RB/LB = elbow, Y = grab, X = release,
+Back = auto-grab on/off, Start = home pose (details in arm_control.py).
 Works with Xbox and PlayStation-style controllers (any SDL gamepad).
 No controller plugged in? It opens a small window instead: click it, then
 W/A/S/D or the arrow keys drive, Space brakes.
@@ -22,6 +24,8 @@ import time
 os.environ.setdefault("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1")
 import pygame
 import serial
+
+from arm_control import ArmPad
 
 DEADZONE = 0.15
 SEND_HZ  = 20          # well inside the ESP32's 500 ms watchdog
@@ -44,6 +48,9 @@ class SerialLink:
     def send(self, l, r, f):
         self.ser.reset_input_buffer()     # ignore STATUS/ACK chatter from the ESP32
         self.ser.write(f"CMD {l} {r} {f}\n".encode())
+
+    def send_servo(self, ch, deg):
+        self.ser.write(f"SERVO {ch} {deg}\n".encode())
 
     def close(self):
         self.ser.close()
@@ -71,6 +78,16 @@ class WifiLink:
             if self.ok is not False:
                 print("Can't reach the robot — is the laptop on WiFi 'Philo-Robot'? Retrying...")
             self.ok = False
+        finally:
+            conn.close()
+
+    def send_servo(self, ch, deg):
+        conn = http.client.HTTPConnection(self.HOST, 80, timeout=0.3)
+        try:
+            conn.request("GET", f"/servo?ch={ch}&deg={deg}", headers={"Connection": "close"})
+            conn.getresponse().read()
+        except (OSError, http.client.HTTPException):
+            pass                          # the drive loop already reports a lost link
         finally:
             conn.close()
 
@@ -107,7 +124,9 @@ def main():
         link = WifiLink()
     else:
         link = SerialLink(args.serial)
-    print("Ready." + (" Left stick drives, B/Circle stops, Ctrl+C quits." if js else ""))
+    arm = ArmPad(js, link.send_servo) if js else None
+    print("Ready." + (" Left stick drives, B/Circle stops, D-pad/LB/RB move the arm, "
+                      "Y grab, X release, Back auto-grab, Start home, Ctrl+C quits." if js else ""))
 
     def axis(i):
         v = js.get_axis(i)
@@ -121,6 +140,7 @@ def main():
         return float(throttle), float(steer), bool(k[pygame.K_SPACE])
 
     last_print = 0.0
+    last_t = time.time()
     try:
         while True:
             for ev in pygame.event.get():
@@ -139,6 +159,10 @@ def main():
                 cmd = (scale(l, args.min_speed, args.max_speed),
                        scale(r, args.min_speed, args.max_speed), 0)
             link.send(*cmd)
+            now = time.time()
+            if arm:
+                arm.poll(now - last_t)
+            last_t = now
             if time.time() - last_print > 0.5:    # live readout: is the stick being seen?
                 last_print = time.time()
                 print(f"\rstick fwd {throttle:+.2f} turn {steer:+.2f}  ->  CMD {cmd[0]:4d} {cmd[1]:4d} {cmd[2]}   ",

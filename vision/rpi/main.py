@@ -168,6 +168,10 @@ def main():
                         help="fastest wheel speed when following (0-255)")
     parser.add_argument("--manual",     action="store_true",
                         help="enable Xbox controller; A button toggles AUTO (follow) / MANUAL (drive)")
+    parser.add_argument("--grip",       type=int, default=140,
+                        help="gripper angle for grabbing (auto-grab and the Y button)")
+    parser.add_argument("--no-autograb", action="store_true",
+                        help="don't turn on auto-grab at start (needs the IR sensor on the gripper)")
     args = parser.parse_args()
 
     # use OpenCV-style capture (cap.read + BGR) for webcam or any --source; else Pi camera
@@ -179,6 +183,10 @@ def main():
         from uart import ESP32Serial
         uart = ESP32Serial(port=args.serial)
         print(f"Serial connected on {args.serial}")
+        if not args.no_autograb:
+            time.sleep(2.5)                       # ESP32 resets when the port opens
+            uart.send_servo(99, args.grip)        # auto-grab on (see arm.h)
+            print(f"Auto-grab ON at {args.grip}. Raise a hand to stop Philo and get the object back.")
     else:
         print("No serial — running vision only")
 
@@ -217,6 +225,14 @@ def main():
             print("Manual control ON — press A to toggle AUTO (follow) / MANUAL (drive).")
         except Exception as e:
             print(f"Controller unavailable ({e}); staying in AUTO.")
+    arm = None
+    if gamepad and uart:
+        from arm_control import ArmPad
+        arm = ArmPad(gamepad.js, uart.send_servo, grip=args.grip)
+        arm.auto = not args.no_autograb
+        print("Arm on the controller: D-pad/LB/RB move it, Y grab, X release, Back auto-grab, Start home.")
+    arm_t = time.time()
+    was_stopped = False
 
     fps_t0, fps_n = time.time(), 0
 
@@ -256,6 +272,10 @@ def main():
                 if toggle:
                     mode = "AUTO" if mode == "MANUAL" else "MANUAL"
                     print(f"Mode -> {mode}")
+                if arm:
+                    now = time.time()
+                    arm.poll(now - arm_t)
+                    arm_t = now
 
             bbox, labels, stopped = None, [], False
 
@@ -268,6 +288,12 @@ def main():
                 bbox, kpts, labels = tracker.infer(rgb)
                 kpt_ys  = tracker.gesture_keypoints(kpts)
                 stopped = ctrl.update_gesture(kpt_ys)
+
+                # Raised hand = stop AND hand the object back
+                if stopped and not was_stopped and uart and uart.holding:
+                    uart.send_servo(3, 50)
+                    print("Hand raised: releasing the object")
+                was_stopped = stopped
 
                 if uart:
                     if stopped:
