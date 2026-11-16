@@ -41,6 +41,15 @@
 #define PIN_TRIG_R  13   // IO13
 #define PIN_ECHO_R  23   // IO23
 
+// ── Gripper object sensor (IR tracking module, e.g. TCRT5000/Keyes IR_01) ───
+// Powered from 3V3 so its output is ESP32-safe. Shares IO4 with ECHO_L, so it's
+// only available on builds without the ultrasonics.
+#ifdef NO_ULTRASONIC
+  #define PIN_GRIP_IR     4   // IO4 ← sensor S / DO / OUT
+  #define GRIP_IR_ACTIVE  LOW // most modules pull low (LED on) when something is close;
+                              // if "OBJ 1" shows with nothing there, change to HIGH
+#endif
+
 // ── I²C (MPU-6050 @ 0x68, OLEDs via J_MAST) ─────────────────────────────────
 #define PIN_SDA     21   // IO21
 #define PIN_SCL     22   // IO22

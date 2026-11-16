@@ -4,7 +4,9 @@ Move the arm servos by hand to test each joint and find good angles.
   python arm_test.py --serial COM15      # ESP32 on the USB cable
   python arm_test.py --wifi              # laptop joined to WiFi "Philo-Robot"
 
-Type:  <channel> <degrees>   e.g.  3 40    (gripper to 40 degrees)
+Type:  <channel> <degrees>   e.g.  3 90    (gripper to 90 degrees)
+       auto <degrees>        auto-grab on: close to <degrees> when an object is in the jaws
+       auto off              auto-grab off
        q                     quit
 Channels (PCA9685): 0 = base, 1 = shoulder, 2 = elbow, 3 = gripper.
 Start every new joint at 90 and move in small steps until you know its limits —
@@ -37,11 +39,17 @@ def main():
         # PC's receive buffer fills, the link stalls and our next write hangs —
         # so keep draining (and discarding) everything it sends.
         def drain():
+            buf = b""
             while ser.is_open:
                 try:
-                    ser.read(4096)
+                    buf += ser.read(4096)
                 except (serial.SerialException, OSError, TypeError):
                     break
+                *lines, buf = buf.split(b"\n")
+                for ln in lines:            # show gripper-sensor events, drop STATUS spam
+                    s = ln.decode(errors="ignore").strip()
+                    if s.startswith(("OBJ", "AUTO")):
+                        print(f"\n  [robot] {s}\n> ", end="", flush=True)
         threading.Thread(target=drain, daemon=True).start()
 
     def send(ch, deg):
@@ -71,6 +79,14 @@ def main():
             break
         if line in ("q", "quit", "exit"):
             break
+        if line.startswith("auto"):
+            arg = line[4:].strip()
+            deg = 0 if arg in ("", "off", "0") else int(arg) if arg.isdigit() else None
+            if deg is None:
+                print("  type: auto 115   or   auto off")
+            elif send(99, deg):             # channel 99 = auto-grab (see arm.h)
+                print(f"  auto-grab {'off' if deg == 0 else f'on, grip angle {deg}'}")
+            continue
         try:
             ch, deg = (int(x) for x in line.split())
         except ValueError:
