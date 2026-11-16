@@ -69,7 +69,7 @@ bool arm_init() {
         last_step[i] = still_since[i] = 0;
     }
 #ifdef PIN_GRIP_IR
-    pinMode(PIN_GRIP_IR, INPUT);
+    pinMode(PIN_GRIP_IR, INPUT_PULLUP);   // unplugged = reads HIGH = "no object" (IO4 has a pull-up)
 #endif
     Wire.beginTransmission(PCA9685_ADDR);          // probe first: begin() can't report a missing board
     if (Wire.endTransmission() != 0) return false;
