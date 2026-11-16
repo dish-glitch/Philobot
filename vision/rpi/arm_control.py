@@ -6,10 +6,10 @@ Game-controller arm controls, shared by drive.py and main.py --manual.
   RB / LB            elbow     (front arm up/down)
   Y                  close gripper (grab)
   X                  open gripper (release)
-  Back / View        auto-grab on/off (closes by itself when something is in the jaws)
+  B / Circle         auto-grab on/off (closes by itself when something is in the jaws)
   Start / Menu       home pose
 
-A and B are left alone: A toggles AUTO/MANUAL in main.py, B brakes in drive.py.
+A is left alone (it toggles AUTO/MANUAL in main.py); View brakes in drive.py.
 Hold a D-pad direction or bumper to keep a joint moving. The ESP32 clamps every
 joint to its measured safe range; the same limits are mirrored here so a held
 button doesn't keep counting past the end.
@@ -21,7 +21,7 @@ OPEN    = 50
 GRIP    = 140
 AUTO_CH = 99          # "SERVO 99 <deg>" = auto-grab on at <deg>, 0 = off (see arm.h)
 
-BTN_X, BTN_Y, BTN_LB, BTN_RB, BTN_BACK, BTN_START = 2, 3, 4, 5, 6, 7   # Xbox layout in SDL
+BTN_B, BTN_X, BTN_Y, BTN_LB, BTN_RB, BTN_START = 1, 2, 3, 4, 5, 7      # Xbox layout in SDL
 
 
 class ArmPad:
@@ -60,7 +60,7 @@ class ArmPad:
             self.send(3, self.grip)
         if self._pressed(BTN_X):
             self.send(3, OPEN)
-        if self._pressed(BTN_BACK):
+        if self._pressed(BTN_B):
             self.set_auto(not self.auto)
         if self._pressed(BTN_START):
             self.home()

@@ -230,7 +230,7 @@ def main():
         from arm_control import ArmPad
         arm = ArmPad(gamepad.js, uart.send_servo, grip=args.grip)
         arm.auto = not args.no_autograb
-        print("Arm on the controller: D-pad/LB/RB move it, Y grab, X release, Back auto-grab, Start home.")
+        print("Arm on the controller: D-pad = base/shoulder, R1/L1 = elbow, Y grab, X release, B auto-grab, Start home.")
     arm_t = time.time()
     was_stopped = False
 

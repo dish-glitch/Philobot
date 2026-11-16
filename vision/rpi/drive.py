@@ -6,9 +6,9 @@ Controller -> laptop (USB or Bluetooth) -> ESP32 (USB cable) -> motors.
   python drive.py --wifi                         # wireless: laptop joined to WiFi "Philo-Robot"
   python drive.py --serial COM15 --min-speed 150 --max-speed 255
 
-Left stick: up/down = forward/back, left/right = turn.  B / Circle (button 1) = stop.
-Arm: D-pad = base/shoulder, RB/LB = elbow, Y = grab, X = release,
-Back = auto-grab on/off, Start = home pose (details in arm_control.py).
+Left stick: up/down = forward/back, left/right = turn (let go = stop).  View = brake.
+Arm: D-pad = base/shoulder, R1/L1 = elbow up/down, Y = grab, X = release,
+B = auto-grab on/off, Start = home pose (details in arm_control.py).
 Works with Xbox and PlayStation-style controllers (any SDL gamepad).
 No controller plugged in? It opens a small window instead: click it, then
 W/A/S/D or the arrow keys drive, Space brakes.
@@ -125,8 +125,8 @@ def main():
     else:
         link = SerialLink(args.serial)
     arm = ArmPad(js, link.send_servo) if js else None
-    print("Ready." + (" Left stick drives, B/Circle stops, D-pad/LB/RB move the arm, "
-                      "Y grab, X release, Back auto-grab, Start home, Ctrl+C quits." if js else ""))
+    print("Ready." + (" Left stick drives (View = brake), D-pad = base/shoulder, R1/L1 = elbow, "
+                      "Y grab, X release, B auto-grab on/off, Start home, Ctrl+C quits." if js else ""))
 
     def axis(i):
         v = js.get_axis(i)
@@ -148,7 +148,7 @@ def main():
                     raise KeyboardInterrupt
             if js:
                 throttle, steer = -axis(1), axis(0)   # stick up = forward
-                brake = js.get_numbuttons() > 1 and js.get_button(1)
+                brake = js.get_numbuttons() > 6 and js.get_button(6)   # View
             else:
                 throttle, steer, brake = keyboard()
             if brake:
