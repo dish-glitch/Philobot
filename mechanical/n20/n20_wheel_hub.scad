@@ -9,6 +9,8 @@ rim_width    = 14.0;   // tire width
 seat_dia     = 18.3;   // where the tire sits: tire ID is 18 mm, +0.3 so it grips
 lip_dia      = 19.6;   // raised lips at both edges keep the tire from walking off
 lip_width    = 1.2;    // width of each lip
+groove_width = 3.0;    // centre groove for the ridge inside the tire
+groove_dia   = 16.3;   // groove bottom (≈1 mm deep). Tire too tight → lower it
 
 // ── N20 shaft: 3 mm round with one flat. Printed holes come out small, so these
 //    are slightly oversized. Loosen/tighten after one test print. ──
@@ -33,6 +35,12 @@ module rim() {
             cylinder(d = seat_dia, h = rim_width);                                     // tire seat
             translate([0, 0, rim_width - lip_width]) cylinder(d = lip_dia, h = lip_width); // outer lip
         }
+        // centre groove the tire's inner ridge snaps into
+        translate([0, 0, (rim_width - groove_width) / 2])
+            difference() {
+                cylinder(d = seat_dia + 1, h = groove_width);
+                translate([0, 0, -0.01]) cylinder(d = groove_dia, h = groove_width + 0.02);
+            }
         translate([0, 0, -0.01]) d_hole();
     }
 }

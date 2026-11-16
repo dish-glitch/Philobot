@@ -13,6 +13,7 @@ static HardwareSerial PiSerial(1);
 #endif
 
 static char    rx_buf[64];
+static int     servo_ch = 0, servo_deg = 90;
 static uint8_t rx_len = 0;
 
 void pi_comm_init(uint32_t baud) {
@@ -33,6 +34,12 @@ static PiMsgType parse_line(const char *line, PiCmd &cmd, char &asl_letter) {
         cmd.right = r;
         cmd.flags = (uint8_t)f;
         return PI_MSG_CMD;
+    }
+    int ch, deg;
+    if (sscanf(line, "SERVO %d %d", &ch, &deg) == 2) {
+        servo_ch  = ch;
+        servo_deg = deg;
+        return PI_MSG_SERVO;
     }
     if (strncmp(line, "ASL ", 4) == 0 && line[4] != '\0') {
         asl_letter = line[4];
@@ -59,6 +66,11 @@ PiMsgType pi_comm_recv(PiCmd &cmd, char &asl_letter) {
         else rx_len = 0;   // oversized garbage — drop and restart the line
     }
     return PI_MSG_NONE;
+}
+
+void pi_comm_servo(int &ch, int &deg) {
+    ch  = servo_ch;
+    deg = servo_deg;
 }
 
 void pi_comm_send(const PhiloStatus &s) {

@@ -6,7 +6,11 @@ A button = 0. Headless-friendly (dummy SDL video driver).
 
 import os
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")  # no window needed
+# Read the controller even when no SDL window has focus (Windows drops input otherwise).
+os.environ.setdefault("SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS", "1")
 import pygame
+
+from joy_pick import pick_joystick
 
 DEADZONE      = 0.15
 MAX_SPEED     = 200    # matches the robot's command range
@@ -17,10 +21,9 @@ class Gamepad:
     def __init__(self):
         pygame.init()
         pygame.joystick.init()
-        if pygame.joystick.get_count() == 0:
-            raise RuntimeError("No controller found — plug the Xbox controller into the Pi (USB).")
-        self.js = pygame.joystick.Joystick(0)
-        self.js.init()
+        self.js = pick_joystick()
+        if self.js is None:
+            raise RuntimeError("No controller found — plug the controller in (USB).")
         self._prev_toggle = False
         print(f"Controller connected: {self.js.get_name()}")
 
